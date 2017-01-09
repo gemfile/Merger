@@ -1,10 +1,10 @@
 ﻿using System;
 
 namespace Scripts.Game.Card {
-	public class Card: ICard {
+	public class CardBase: ICard {
 		readonly int value;
 
-		public Card(int value) {
+		public CardBase(int value) {
 			this.value = value;
 		}
 

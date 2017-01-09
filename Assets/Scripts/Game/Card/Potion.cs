@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Scripts.Game.Card {
-	public class Potion: Card {
+	public class Potion: CardBase {
 		public Potion (int value): base(value) {
 		}
 
