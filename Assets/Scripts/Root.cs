@@ -4,6 +4,7 @@ using UnityEngine;
 using Scripts.Game;
 using System.Linq;
 using Scripts.Game.Card;
+using UnityEngine;
 
 namespace Scripts {
 	public class Root: MonoBehaviour {
@@ -12,6 +13,12 @@ namespace Scripts {
 
 		Player player;
 		List<ICard> field;
+
+		Root() {
+#if DIABLE_LOG
+			Debug.logger.logEnabled=false;
+#endif
+		}
 
 		// Use this for initialization
 		void Start () {
