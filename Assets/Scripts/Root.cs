@@ -1,28 +1,39 @@
 ﻿using UnityEngine;
 using Scripts.Game;
 using System.Collections;
+using Scripts.Util;
 
 namespace Scripts {
 	public class Root: MonoBehaviour {
 		readonly GameMain gameMain;
+		[SerializeField]
+		GameView gameView;
 
 		Root() {
 #if DIABLE_LOG
 			Debug.logger.logEnabled=false;
 #endif
 			gameMain = new GameMain();
-			PrepareAGame();
-		}
-
-		void PrepareAGame() {
-			gameMain.fieldEvent.AddListener((string type, int value) => {
-				Debug.Log($"hi, {type}, {value}");
-			});
 		}
 
 		// Use this for initialization
 		void Start () {
+			ResourceCache.Load("");
+			PrepareAGame();
+			PrepareAView();
 			StartCoroutine("StartTheGame");
+		}
+
+		void PrepareAGame() {
+			gameMain.Prepare();
+			gameMain.fieldEvent.AddListener((string type, int value) => {
+				Debug.Log($"hi, {type}, {value}");
+				gameView.MakeField(type, value);
+			});
+		}
+
+		void PrepareAView() {
+			gameView.Prepare();
 		}
 
 		IEnumerator StartTheGame() {

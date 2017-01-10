@@ -1,9 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Scripts.Game.Card;
 using System.Linq;
 using UnityEngine.Events;
+using Scripts.Util;
 
 namespace Scripts.Game {
 	[System.Serializable]
@@ -21,6 +21,9 @@ namespace Scripts.Game {
 		public GameMain() {
 			field = new List<ICard>();
 			fieldEvent = new FieldEvent();
+		}
+
+		public void Prepare() {
 			PrepareADeck();
 			MakeAPlayer();
 		}
