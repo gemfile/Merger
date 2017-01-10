@@ -19,9 +19,15 @@ namespace Scripts.Util {
 			return cache[key];
 		}
 
-		static public GameObject Instantiate(string key) {
+		static public GameObject Instantiate(string key, Transform parent = null) {
+			Debug.Log("hi" + key);
 			var instance = (GameObject)(Object.Instantiate( cache[key] ));
 			instance.name = key;
+			instance.SetActive(false);
+
+			if (parent) {
+				instance.transform.SetParent(parent);
+			}
 			return instance;
 		}
 	}

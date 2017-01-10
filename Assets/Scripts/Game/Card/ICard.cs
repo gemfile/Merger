@@ -6,6 +6,7 @@ namespace Scripts.Game.Card
 	{
 		int GetValue();
 		string GetType();
+		string GetResourceName();
 	}
 }
 

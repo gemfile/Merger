@@ -26,9 +26,9 @@ namespace Scripts {
 
 		void PrepareAGame() {
 			gameMain.Prepare();
-			gameMain.fieldEvent.AddListener((string type, int value) => {
+			gameMain.fieldEvent.AddListener((string type, int value, string resourceName) => {
 				Debug.Log($"hi, {type}, {value}");
-				gameView.MakeField(type, value);
+				gameView.MakeField(type, value, resourceName);
 			});
 		}
 

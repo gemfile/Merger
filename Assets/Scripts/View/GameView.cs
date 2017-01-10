@@ -6,24 +6,17 @@ using Scripts.Util;
 public class GameView : MonoBehaviour {
 	GameObject[] decks;
 	GameObject worrior;
-	GameObject potion;
-	GameObject magic;
-	Dictionary<int, GameObject> Monsters;
-	Dictionary<int, GameObject> Weapons;
 
-	public void Prepare()
-	{
+	public void Prepare() {
 		decks = new GameObject[] {
-			ResourceCache.Instantiate("BlueDeck"), 
-			ResourceCache.Instantiate("Deck"),
+			ResourceCache.Instantiate("BlueDeck", transform), 
+			ResourceCache.Instantiate("WhiteDeck", transform),
 		};
-		worrior = ResourceCache.Instantiate("Worrior");
-		potion = ResourceCache.Instantiate("Potion");
-		magic = ResourceCache.Instantiate("Magic");
+		worrior = ResourceCache.Instantiate("Worrior", transform);
 	}
 
-	public void MakeField(string type, int value)
-	{
-		
+	public void MakeField(string type, int value, string resourceName) {
+		var gameObject = ResourceCache.Instantiate(resourceName, transform);
+		gameObject.SetActive(true);
 	}
 }

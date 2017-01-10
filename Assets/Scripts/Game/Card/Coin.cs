@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Scripts.Game.Card {
 	public class Coin: CardBase {
-		public Coin (int value): base(value) {
+		public Coin (int value, string resourceName): base(value, resourceName) {
 			
 		}
 
