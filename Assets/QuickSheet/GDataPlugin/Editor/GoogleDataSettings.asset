@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbcda13c00cae4f4087d84a149a1c70b, type: 3}
+  m_Name: GoogleDataSettings
+  m_EditorClassIdentifier: 
+  RuntimePath: 
+  EditorPath: 
+  OAuth2Data:
+    client_id: 853725567261-p2km39pjk9fivnt984cpbuenre515o6j.apps.googleusercontent.com
+    auth_uri: 68747470733a2f2f6163636f756e74732e676f6f676c652e636f6d2f6f2f6f61757468322f61757468
+    token_uri: 68747470733a2f2f6163636f756e74732e676f6f676c652e636f6d2f6f2f6f61757468322f746f6b656e
+    auth_provider_x509_cert_url: 68747470733a2f2f7777772e676f6f676c65617069732e636f6d2f6f61757468322f76312f6365727473
+    client_secret: twsRy0RCUpnqMk2KQS0zWTjS
+    redirect_uris:
+    - 75726e3a696574663a77673a6f617574683a322e303a6f6f62
+    - 687474703a2f2f6c6f63616c686f7374
+  _AccessCode: 4/DdJ5HHUmIMwgyMv3pt-T8hpj7JXf1rL4leng4R3VvZ8
+  _RefreshToken: 1/dwYfqUZvMM_JjyKVb7cnANEi6OSE3X_O2uDU1T9QVFc
+  _AccessToken: ya29.Ci_PAy8Ir0b877KK7L76Us7zRhRa22ICAqL8F30vThSiPf_hIRDYLHBxddP2_UPmKw
