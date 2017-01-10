@@ -1,7 +1,5 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Scripts.Util {
 	public static class ResourceCache {
@@ -23,7 +21,6 @@ namespace Scripts.Util {
 			Debug.Log("hi" + key);
 			var instance = (GameObject)(Object.Instantiate( cache[key] ));
 			instance.name = key;
-			instance.SetActive(false);
 
 			if (parent) {
 				instance.transform.SetParent(parent);

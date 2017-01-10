@@ -218,9 +218,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10df06355336b4b23a4257d9055df70f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  decks:
-  - {fileID: 1854699409591592, guid: 8add7bc6921bf4dc38c980f360450134, type: 2}
-  - {fileID: 1860858548699124, guid: 759e950311f9e49dc8f3d6fa2db6dcc9, type: 2}
 --- !u!1 &1191574749
 GameObject:
   m_ObjectHideFlags: 0

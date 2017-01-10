@@ -7,7 +7,7 @@ using Scripts.Util;
 
 namespace Scripts.Game {
 	[System.Serializable]
-	public class FieldEvent: UnityEvent<string, int, string> {}
+	public class FieldEvent: UnityEvent<string, int, string, string> {}
 
 	public class GameMain {
 		List<ICard> deck;
@@ -51,7 +51,7 @@ namespace Scripts.Game {
 
 		void MakePotions() {
 			foreach (int value in Enumerable.Range(2, 9)) {
-				deck.Add( new Potion(value, "Potion") );				
+				deck.Add( new Potion(value, "Potion", "Potion") );				
 			}
 		}
 
@@ -69,8 +69,8 @@ namespace Scripts.Game {
 			};
 
 			foreach (int value in Enumerable.Range(2, 9)) {
-				deck.Add( new Monster(value, monsterDic[value]) );
-				deck.Add( new Monster(value, monsterDic[value]) );
+				deck.Add( new Monster(value, monsterDic[value], monsterDic[value]) );
+				deck.Add( new Monster(value, monsterDic[value], monsterDic[value]) );
 			}
 		}
 
@@ -78,7 +78,7 @@ namespace Scripts.Game {
 			int coinIndex = 1;
 			int count = 0;
 			foreach (int value in Enumerable.Range(2, 9)) {
-				deck.Add( new Coin(value, "Coin" + coinIndex) );
+				deck.Add( new Coin(value, "Coin" + coinIndex, "Coin") );
 				if (count % 2 == 1) {
 					coinIndex++;
 				}
@@ -97,15 +97,15 @@ namespace Scripts.Game {
 			};
 
 			foreach (int value in Enumerable.Range(2, 5)) {
-				deck.Add( new Weapon(value, weaponDic[value]) );
-				deck.Add( new Weapon(value, weaponDic[value]) );
+				deck.Add( new Weapon(value, weaponDic[value], weaponDic[value]) );
+				deck.Add( new Weapon(value, weaponDic[value], weaponDic[value]) );
 			}
-			deck.Add( new Weapon(7, weaponDic[7]) );
+			deck.Add( new Weapon(7, weaponDic[7], weaponDic[7]) );
 		}
 
 		void MakeMagics() {
 			foreach (int value in Enumerable.Range(2, 5)) {
-				deck.Add( new Magic(value, "Magic") );
+				deck.Add( new Magic(value, "Magic", "Magic") );
 			}
 		}
 
@@ -114,7 +114,7 @@ namespace Scripts.Game {
 			if (field.Count < 3) {
 				ICard card = deck[cursorOfDeck++];
 				field.Add(card);
-				fieldEvent.Invoke(card.GetType(), card.GetValue(), card.GetResourceName());
+				fieldEvent.Invoke(card.GetType().Name, card.GetValue(), card.GetResourceName(), card.GetCardName());
 
 				Debug.Log("=== Choose the card ===");
 				int count = 0;

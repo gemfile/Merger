@@ -1,12 +1,8 @@
-﻿using System;
-
-namespace Scripts.Game.Card
-{
-	public interface ICard
-	{
+﻿namespace Scripts.Game.Card {
+	public interface ICard {
 		int GetValue();
-		string GetType();
 		string GetResourceName();
+		string GetCardName();
 	}
 }
 

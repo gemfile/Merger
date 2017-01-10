@@ -1,13 +1,13 @@
-﻿using System;
-
-namespace Scripts.Game.Card {
+﻿namespace Scripts.Game.Card {
 	public class CardBase: ICard {
 		readonly int value;
 		readonly string resourceName;
+		readonly string cardName;
 
-		public CardBase(int value, string resourceName) {
+		public CardBase(int value, string resourceName, string cardName) {
 			this.value = value;
 			this.resourceName = resourceName;
+			this.cardName = cardName;
 		}
 
 		public int GetValue() {
@@ -18,8 +18,8 @@ namespace Scripts.Game.Card {
 			return resourceName;
 		}
 
-		public virtual string GetType() {
-			return "Card";
+		public string GetCardName() {
+			return cardName;
 		}
 	}
 }

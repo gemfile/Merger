@@ -25,7 +25,7 @@ namespace Scripts.Game
 		public void Merge(ICard card)
 		{
 			Debug.Log("=== Merging ===");
-			switch (card.GetType()) {
+			switch (card.GetType().Name) {
 				case "Coin":
 					coin += card.GetValue();
 					break;
