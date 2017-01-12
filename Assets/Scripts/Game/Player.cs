@@ -4,7 +4,7 @@ using Scripts.Game.Card;
 
 namespace Scripts.Game
 {
-	public class Player
+	public class Player: CardBase
 	{
 		int hp;
 		readonly int limitOfHp;
@@ -16,9 +16,9 @@ namespace Scripts.Game
 			get { return hp; }
 		}
 
-		public Player(int hp)
+		public Player(int value, string resourceName, string cardName): base(value, resourceName, cardName)
 		{
-			this.hp = hp;
+			this.hp = value;
 			this.limitOfHp = hp;
 		}
 

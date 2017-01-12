@@ -18,7 +18,7 @@ namespace Scripts.Util {
 		}
 
 		static public GameObject Instantiate(string key, Transform parent = null) {
-			Debug.Log("hi" + key);
+			Debug.Log("Instantiate: " + key);
 			var instance = (GameObject)(Object.Instantiate( cache[key] ));
 			instance.name = key;
 

@@ -7,7 +7,9 @@ using Scripts.Util;
 
 namespace Scripts.Game {
 	[System.Serializable]
-	public class FieldEvent: UnityEvent<string, int, string, string> {}
+	public class FieldAddingEvent: UnityEvent<string, int, string, string> {}
+	[System.Serializable]
+	public class FieldMergingEvent: UnityEvent<int> {}
 
 	public class GameMain {
 		List<ICard> deck;
@@ -16,11 +18,13 @@ namespace Scripts.Game {
 		Player player;
 		readonly List<ICard> field;
 
-		public FieldEvent fieldEvent;
+		public FieldAddingEvent fieldAddingEvent;
+		public FieldMergingEvent fieldMergingEvent;
 
 		public GameMain() {
 			field = new List<ICard>();
-			fieldEvent = new FieldEvent();
+			fieldAddingEvent = new FieldAddingEvent();
+			fieldMergingEvent = new FieldMergingEvent();
 		}
 
 		public void Prepare() {
@@ -29,12 +33,11 @@ namespace Scripts.Game {
 		}
 
 		void MakeAPlayer() {
-			player = new Player(13);
+			player = new Player(13, "Worrior", "Worrior");
+			AddAField(player);
 		}
 
 		void PrepareADeck() {
-			cursorOfDeck = 0;
-
 			deck = new List<ICard>();
 			MakeCoins();
 			MakePotions();
@@ -42,6 +45,8 @@ namespace Scripts.Game {
 			MakeWeapons();
 			MakeMagics();
 			deck.Shuffle();
+
+			cursorOfDeck = 0;
 
 			int count = 0;
 			foreach (ICard card in deck) {
@@ -112,9 +117,7 @@ namespace Scripts.Game {
 		public void FillTheField()
 		{
 			if (field.Count < 3) {
-				ICard card = deck[cursorOfDeck++];
-				field.Add(card);
-				fieldEvent.Invoke(card.GetType().Name, card.GetValue(), card.GetResourceName(), card.GetCardName());
+				AddAField(deck[cursorOfDeck++]);
 
 				Debug.Log("=== Choose the card ===");
 				int count = 0;
@@ -125,11 +128,21 @@ namespace Scripts.Game {
 			}
 		}
 
+		void AddAField(ICard card) {
+			field.Add(card);
+			fieldAddingEvent.Invoke(card.GetType().Name, card.GetValue(), card.GetResourceName(), card.GetCardName());
+		}
+
+		public bool IsIndexNearFromPlayer(int index) {
+			return (Mathf.Abs(index - field.IndexOf(player)) == 1);
+		}
+
 		public void Merge(int index) {
 			ICard card = field[index];
-			field.RemoveAt(index);
-
 			player.Merge(card);
+
+			field.RemoveAt(index);
+			fieldMergingEvent.Invoke(index);
 		}
 
 		public bool IsOver {
