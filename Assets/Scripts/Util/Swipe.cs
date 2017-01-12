@@ -10,7 +10,7 @@ namespace Scripts.Util {
 		public Direction direction;
 		public Vector2 touchDelta;
 		public float timeDelta;
-		public bool havePass;
+		public bool hasPass;
 	}
 
 	public enum Direction {
@@ -23,12 +23,16 @@ namespace Scripts.Util {
 
     public class Swipe : MonoBehaviour {
         
-        public SwipeEvent EventSwipe;
+        public SwipeEvent swipeEvent;
     	
         float timeBegin = 0;
         float timeEnd = 0;
         Vector2 touchBegin = Vector2.zero;
         Vector2 touchEnd = Vector2.zero;
+
+		public Swipe() {
+			swipeEvent = new SwipeEvent();
+		}
 
         void Update () {
             KeyboardUpdate();
@@ -85,11 +89,11 @@ namespace Scripts.Util {
                 }
 
                 if (direction != Direction.None) {
-                    EventSwipe.Invoke(new SwipeInfo(){
+                    swipeEvent.Invoke(new SwipeInfo(){
                         direction   = direction, 
                         touchDelta  = touchDelta, 
                         timeDelta   = timeDelta,
-                        havePass  = false
+                        hasPass  = false
                     });
                 }
 
@@ -110,9 +114,9 @@ namespace Scripts.Util {
             }
 
             if (direction != Direction.None) {
-                EventSwipe.Invoke(new SwipeInfo(){
+                swipeEvent.Invoke(new SwipeInfo(){
                     direction   = direction, 
-                    havePass  = true
+                    hasPass  = true
                 });
             }
         }

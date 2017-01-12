@@ -10,6 +10,7 @@ namespace Scripts.View {
 		List<GameObject> fields;
 		GameObject player;
 		bool isPlayer;
+		Bounds fieldSize;
 
 		public void Prepare() {
 			deckNames = new string[] { "BlueDeck", "WhiteDeck" };
@@ -17,12 +18,13 @@ namespace Scripts.View {
 			isPlayer = false;
 		}
 
-		public void MergeField(int index) {
-			var mergingCoroutine = StartCoroutine(StartMerging(index));
+		public void MergeField(int xOffset) {
+			var mergingCoroutine = StartCoroutine(StartMerging(xOffset));
 		}
 
-		IEnumerator StartMerging(int index) {
-			var field = fields[index];
+		IEnumerator StartMerging(int xOffset) {
+			int xIndex = fields.IndexOf(player) + xOffset;
+			var field = fields[xIndex];
 			var character = player.transform.GetChild(1);
 			var characterAnimator = character.GetChild(0).GetComponent<Animator>();
 
@@ -64,15 +66,19 @@ namespace Scripts.View {
 
 		void CopyValues(GameObject source, GameObject target) {
 			target.name = source.name;
-			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text = source.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text;	
-			target.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text = source.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text;
+
+			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text = 
+				source.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text;	
+			
+			target.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text = 
+				source.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text;
 		}
 
 		public bool IsPlayer() {
 			return isPlayer;
 		}
 
-		public void MakeField(string type, int value, string resourceName, string cardName) {
+		public void MakeField(int xIndex, string type, int value, string resourceName, string cardName) {
 			var field = new GameObject();
 			field.transform.SetParent(transform);
 			field.name = type;
@@ -81,12 +87,12 @@ namespace Scripts.View {
 			deck.transform.SetParent(field.transform);
 			deck.transform.Find("Name").GetComponent<TextMesh>().text = cardName;
 			deck.transform.Find("Value").GetComponent<TextMesh>().text = value.ToString();
+			fieldSize = field.GetBounds();
 
 			var card = ResourceCache.Instantiate(resourceName, transform);
 			card.transform.SetParent(field.transform);
 
-			Bounds fieldSize = field.GetBounds();
-			field.transform.localPosition = new Vector2((fieldSize.size.x + 0.1f) * fields.Count, field.transform.localPosition.y);
+			field.transform.localPosition = new Vector2((fieldSize.size.x + 0.1f) * xIndex, field.transform.localPosition.y);
 			fields.Add(field);
 
 			if (type == "Player") {

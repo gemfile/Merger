@@ -1,30 +1,42 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Scripts.Game.Card;
-using System.Linq;
 using UnityEngine.Events;
 using Scripts.Util;
+using System;
 
 namespace Scripts.Game {
-	[System.Serializable]
-	public class FieldAddingEvent: UnityEvent<string, int, string, string> {}
-	[System.Serializable]
+	public class FieldAddingInfo {
+		public int xIndex;
+		public CardData cardData;
+	}
+	public class FieldAddingEvent: UnityEvent<FieldAddingInfo> {}
 	public class FieldMergingEvent: UnityEvent<int> {}
 
+	public class CardData {
+		public string type;
+		public int value;
+		public string resourceName;
+		public string cardName;
+	}
+
 	public class GameMain {
-		List<ICard> deck;
-		int cursorOfDeck;
+		Queue<ICard> deckQueue;
+		List<ICard> deckList;
+
+		int xIndexOfFields;
 
 		Player player;
-		readonly List<ICard> field;
+		readonly List<ICard> fields;
 
 		public FieldAddingEvent fieldAddingEvent;
 		public FieldMergingEvent fieldMergingEvent;
 
 		public GameMain() {
-			field = new List<ICard>();
+			fields = new List<ICard>();
 			fieldAddingEvent = new FieldAddingEvent();
 			fieldMergingEvent = new FieldMergingEvent();
+			xIndexOfFields = 0;
 		}
 
 		public void Prepare() {
@@ -38,90 +50,104 @@ namespace Scripts.Game {
 		}
 
 		void PrepareADeck() {
-			deck = new List<ICard>();
-			MakeCoins();
-			MakePotions();
-			MakeMonsters();
-			MakeWeapons();
-			MakeMagics();
-			deck.Shuffle();
+			MakeCardDatas();
 
-			cursorOfDeck = 0;
+			deckQueue = new Queue<ICard>(deckList.Shuffle());
+			deckList.Clear();
+			deckList = null;
+
+			xIndexOfFields = 0;
 
 			int count = 0;
-			foreach (ICard card in deck) {
+			foreach (ICard card in deckQueue) {
 				Debug.Log( card.GetType() + ", " + card.GetValue() + ", " + count++ );
 			}
 		}
 
-		void MakePotions() {
-			foreach (int value in Enumerable.Range(2, 9)) {
-				deck.Add( new Potion(value, "Potion", "Potion") );				
-			}
-		}
+		void MakeCardDatas() {
+			var cardDataList = new List<CardData>() {
+				// Potion 9
+				new CardData() { type="Potion", value=2, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=3, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=4, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=5, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=6, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=7, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=8, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=9, resourceName="Potion", cardName="Potion" },
+				new CardData() { type="Potion", value=10, resourceName="Potion", cardName="Potion" },
 
-		void MakeMonsters() {
-			var monsterDic = new Dictionary<int, string>() {
-				{ 2, "Slime.B" },
-				{ 3, "Rat" },
-				{ 4, "Bat" },
-				{ 5, "Snake" },
-				{ 6, "GoblinHammer" },
-				{ 7, "Skeleton" },
-				{ 8, "OrcSpear" },
-				{ 9, "OrcKnife" },
-				{ 10, "Minotaur" },
+				// Monster 18
+				new CardData() { type="Monster", value=2, resourceName="Slime.B", cardName="Slime.B" },
+				new CardData() { type="Monster", value=2, resourceName="Slime.B", cardName="Slime.B" },
+				new CardData() { type="Monster", value=3, resourceName="Rat", cardName="Rat" },
+				new CardData() { type="Monster", value=3, resourceName="Rat", cardName="Rat" },
+				new CardData() { type="Monster", value=4, resourceName="Bat", cardName="Bat" },
+				new CardData() { type="Monster", value=4, resourceName="Bat", cardName="Bat" },
+				new CardData() { type="Monster", value=5, resourceName="Snake", cardName="Snake" },
+				new CardData() { type="Monster", value=5, resourceName="Snake", cardName="Snake" },
+				new CardData() { type="Monster", value=6, resourceName="GoblinHammer", cardName="Goblin\nHammer" },
+				new CardData() { type="Monster", value=6, resourceName="GoblinHammer", cardName="Goblin\nHammer" },
+				new CardData() { type="Monster", value=7, resourceName="Skeleton", cardName="Skeleton" },
+				new CardData() { type="Monster", value=7, resourceName="Skeleton", cardName="Skeleton" },
+				new CardData() { type="Monster", value=8, resourceName="OrcSpear", cardName="OrcSpear" },
+				new CardData() { type="Monster", value=8, resourceName="OrcSpear", cardName="OrcSpear" },
+				new CardData() { type="Monster", value=9, resourceName="OrcKnife", cardName="OrcKnife" },
+				new CardData() { type="Monster", value=9, resourceName="OrcKnife", cardName="OrcKnife" },
+				new CardData() { type="Monster", value=10, resourceName="Minotaur", cardName="Minotaur" },
+				new CardData() { type="Monster", value=10, resourceName="Minotaur", cardName="Minotaur" },
+
+				// Coin 9
+				new CardData() { type="Coin", value=2, resourceName="Coin1", cardName="Coin" },
+				new CardData() { type="Coin", value=3, resourceName="Coin1", cardName="Coin" },
+				new CardData() { type="Coin", value=4, resourceName="Coin2", cardName="Coin" },
+				new CardData() { type="Coin", value=5, resourceName="Coin2", cardName="Coin" },
+				new CardData() { type="Coin", value=6, resourceName="Coin3", cardName="Coin" },
+				new CardData() { type="Coin", value=7, resourceName="Coin3", cardName="Coin" },
+				new CardData() { type="Coin", value=8, resourceName="Coin4", cardName="Coin" },
+				new CardData() { type="Coin", value=9, resourceName="Coin4", cardName="Coin" },
+				new CardData() { type="Coin", value=10, resourceName="Coin5", cardName="Coin" },
+
+				// Weapon 11
+				new CardData() { type="Weapon", value=2, resourceName="Knife", cardName="Knife" },
+				new CardData() { type="Weapon", value=2, resourceName="Knife", cardName="Knife" },
+				new CardData() { type="Weapon", value=3, resourceName="Club", cardName="Club" },
+				new CardData() { type="Weapon", value=3, resourceName="Club", cardName="Club" },
+				new CardData() { type="Weapon", value=4, resourceName="Sword", cardName="Sword" },
+				new CardData() { type="Weapon", value=4, resourceName="Sword", cardName="Sword" },
+				new CardData() { type="Weapon", value=5, resourceName="Axe", cardName="Axe" },
+				new CardData() { type="Weapon", value=5, resourceName="Axe", cardName="Axe" },
+				new CardData() { type="Weapon", value=6, resourceName="Hammer", cardName="Hammer" },
+				new CardData() { type="Weapon", value=6, resourceName="Hammer", cardName="Hammer" },
+				new CardData() { type="Weapon", value=7, resourceName="IronMace", cardName="IronMace" },
+
+				// Magic 5
+				new CardData() { type="Magic", value=2, resourceName="Magic", cardName="Magic" },
+				new CardData() { type="Magic", value=3, resourceName="Magic", cardName="Magic" },
+				new CardData() { type="Magic", value=4, resourceName="Magic", cardName="Magic" },
+				new CardData() { type="Magic", value=5, resourceName="Magic", cardName="Magic" },
+				new CardData() { type="Magic", value=6, resourceName="Magic", cardName="Magic" },
 			};
 
-			foreach (int value in Enumerable.Range(2, 9)) {
-				deck.Add( new Monster(value, monsterDic[value], monsterDic[value]) );
-				deck.Add( new Monster(value, monsterDic[value], monsterDic[value]) );
+			deckList = new List<ICard>();
+			foreach (CardData cardData in cardDataList) {
+				var card = (ICard)Activator.CreateInstance(
+					Type.GetType("Scripts.Game.Card." + cardData.type), 
+					cardData.value, 
+					cardData.resourceName, 
+					cardData.cardName
+				);
+				deckList.Add(card);
 			}
 		}
 
-		void MakeCoins() {
-			int coinIndex = 1;
-			int count = 0;
-			foreach (int value in Enumerable.Range(2, 9)) {
-				deck.Add( new Coin(value, "Coin" + coinIndex, "Coin") );
-				if (count % 2 == 1) {
-					coinIndex++;
-				}
-				count++;
-			}
-		}
-
-		void MakeWeapons() {
-			var weaponDic = new Dictionary<int, string>() {
-				{ 2, "Knife" },
-				{ 3, "Club" },
-				{ 4, "Sword" },
-				{ 5, "Axe" },
-				{ 6, "Hammer" },
-				{ 7, "IronMace" },
-			};
-
-			foreach (int value in Enumerable.Range(2, 5)) {
-				deck.Add( new Weapon(value, weaponDic[value], weaponDic[value]) );
-				deck.Add( new Weapon(value, weaponDic[value], weaponDic[value]) );
-			}
-			deck.Add( new Weapon(7, weaponDic[7], weaponDic[7]) );
-		}
-
-		void MakeMagics() {
-			foreach (int value in Enumerable.Range(2, 5)) {
-				deck.Add( new Magic(value, "Magic", "Magic") );
-			}
-		}
-
-		public void FillTheField()
-		{
-			if (field.Count < 3) {
-				AddAField(deck[cursorOfDeck++]);
+		public void FillTheField() {
+			if (fields.Count < 3) {
+				AddAField(deckQueue.Dequeue());
 
 				Debug.Log("=== Choose the card ===");
 				int count = 0;
-				foreach (var icard in field) {
+				foreach (var icard in fields) {
 					Debug.Log( icard.GetType() + ", " + icard.GetValue() + ", " + count++ );
 				}
 				Debug.Log("===============");
@@ -129,27 +155,35 @@ namespace Scripts.Game {
 		}
 
 		void AddAField(ICard card) {
-			field.Add(card);
-			fieldAddingEvent.Invoke(card.GetType().Name, card.GetValue(), card.GetResourceName(), card.GetCardName());
+			fields.Add(card);
+			fieldAddingEvent.Invoke(new FieldAddingInfo() {
+				xIndex = xIndexOfFields++,
+				cardData = new CardData() {
+					type = card.GetType().Name, 
+					value = card.GetValue(), 
+					resourceName = card.GetResourceName(), 
+					cardName = card.GetCardName()
+				}
+			});
 		}
 
-		public bool IsIndexNearFromPlayer(int index) {
-			return (Mathf.Abs(index - field.IndexOf(player)) == 1);
+		public bool IsNearFromPlayer(int index) {
+			return (Mathf.Abs(index - fields.IndexOf(player)) == 1);
 		}
 
-		public void Merge(int index) {
-			ICard card = field[index];
-			player.Merge(card);
+		public void Merge(int xOffset, int yOffset) {
+			var xIndex = xOffset;
+			if (xIndex >= 0 && xIndex < fields.Count) {
+				ICard card = fields[xIndex];
+				player.Merge(card);
 
-			field.RemoveAt(index);
-			fieldMergingEvent.Invoke(index);
+				fields.RemoveAt(xIndex);
+				fieldMergingEvent.Invoke(xOffset);				
+			}
 		}
 
 		public bool IsOver {
-			get { 
-				//				Debug.Log($"hi {player.Hp <= 0}");
-				return player.Hp <= 0; 
-			}
+			get { return player.Hp <= 0; }
 		}
 	}
 }

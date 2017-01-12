@@ -1,25 +1,21 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Scripts.Util
-{
-    public static class ExtensionMethods
-    {
-        public static void Shuffle<T>(this IList<T> list)  
-        {  
-            for (int i = 0; i < list.Count; i++) {
-                T temp = list[i];
-                int randomIndex = Random.Range(i, list.Count);
-                list[i] = list[randomIndex];
-                list[randomIndex] = temp;
+namespace Scripts.Util {
+    public static class ExtensionMethods {
+		public static IList<T> Shuffle<T>(this IList<T> collection) {  
+			for (int i = 0; i < collection.Count; i++) {
+				T temp = collection[i];
+				int randomIndex = Random.Range(i, collection.Count);
+				collection[i] = collection[randomIndex];
+				collection[randomIndex] = temp;
             }
+			return collection;
         }
 
-		public static Bounds GetBounds(this GameObject gameObject) 
-		{
+		public static Bounds GetBounds(this GameObject gameObject) {
 			var bounds = new Bounds (gameObject.transform.position, Vector3.zero);
-			foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer> ()) 
-			{
+			foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>()) {
 				bounds.Encapsulate(renderer.bounds);
 			}
 			return bounds;
