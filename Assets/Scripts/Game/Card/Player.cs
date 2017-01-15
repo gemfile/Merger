@@ -2,30 +2,35 @@
 using UnityEngine;
 using Scripts.Game.Card;
 
-namespace Scripts.Game
+namespace Scripts.Game.Card 
 {
-	public class Player: CardBase
+	public class Player: CardBase 
 	{
 		int hp;
 		readonly int limitOfHp;
-		int atk = 0;
-		int def = 0;
-		int coin = 0;
+		int atk;
+		int def;
+		int coin;
 
-		public int Hp {
+		public int Hp 
+		{
 			get { return hp; }
 		}
 
-		public Player(int value, string resourceName, string cardName): base(value, resourceName, cardName)
+		public Player(CardData cardData): base(cardData) 
 		{
-			this.hp = value;
-			this.limitOfHp = hp;
+			hp = cardData.value;
+			limitOfHp = hp;
+			atk = 0;
+			def = 0;
+			coin = 0;
 		}
 
-		public void Merge(ICard card)
+		public PlayerData Merge(ICard card) 
 		{
 			Debug.Log("=== Merging ===");
-			switch (card.GetType().Name) {
+			switch (card.GetType().Name) 
+			{
 				case "Coin":
 					coin += card.GetValue();
 					break;
@@ -60,6 +65,7 @@ namespace Scripts.Game
 
 			Debug.Log("Stats after merging : hp " + hp  + ", atk " + atk + ", def " + def + ", coin " + coin);
 			Debug.Log("===============");
+			return new PlayerData { hp = hp, coin = coin, atk = atk, def = def };
 		}
 	}
 }

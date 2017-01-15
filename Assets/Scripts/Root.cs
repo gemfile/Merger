@@ -4,14 +4,17 @@ using System.Collections;
 using Scripts.Util;
 using Scripts.View;
 
-namespace Scripts {
-	public class Root: MonoBehaviour {
+namespace Scripts 
+{
+	public class Root: MonoBehaviour 
+	{
 		readonly GameMain gameMain;
 		[SerializeField]
 		GameView gameView;
 		Swipe swipe;
 
-		Root() {
+		Root() 
+		{
 #if DIABLE_LOG
 			Debug.logger.logEnabled=false;
 #endif
@@ -20,13 +23,14 @@ namespace Scripts {
 		}
 
 		// Use this for initialization
-		void Start () {
+		void Start () 
+		{
 			ResourceCache.Load("");
 			PrepareAView();
 			PrepareAGame();
 			StartCoroutine("StartTheGame");
 			swipe = gameObject.AddComponent<Swipe>();
-			swipe.swipeEvent.AddListener((SwipeInfo swipeInfo) => {
+			swipe.swipeEvent.AddListener(swipeInfo => {
 				if(swipeInfo.hasPass) {
 					switch(swipeInfo.direction) {
 						case Direction.Right: gameMain.Merge(1, 0); break;
@@ -38,31 +42,29 @@ namespace Scripts {
 			});
 		}
 
-		void PrepareAGame() {
-			gameMain.fieldAddingEvent.AddListener((FieldAddingInfo info) => {
-				Debug.Log($"fieldAdding: {info.xIndex}, {info.cardData.type}, {info.cardData.value}, {info.cardData.resourceName}, {info.cardData.cardName}");
-				gameView.MakeField(
-					info.xIndex, 
-					info.cardData.type, 
-					info.cardData.value, 
-					info.cardData.resourceName, 
-					info.cardData.cardName
-				);
+		void PrepareAGame() 
+		{
+			gameMain.fieldAddingEvent.AddListener((position, cardData) => {
+				Debug.Log($"fieldAdding: {position.row}, {position.col}, {cardData.type}, {cardData.value}, {cardData.resourceName}, {cardData.cardName}");
+				gameView.MakeField(position, cardData);
 			});
-			gameMain.fieldMergingEvent.AddListener((int xOffset) => {
-				Debug.Log($"fieldRemoving: {xOffset}");
-				gameView.MergeField(xOffset);
+			gameMain.fieldMergingEvent.AddListener((position, playerData) => {
+				Debug.Log($"fieldRemoving: {position.row}, {position.col}");
+				gameView.MergeField(position, playerData);
 			});
 			gameMain.Prepare();
 		}
 
-		void PrepareAView() {
+		void PrepareAView() 
+		{
 			gameView.Prepare();
 		}
 
-		IEnumerator StartTheGame() {
-			while (true) {
-				if (!gameView.IsPlayer()) {
+		IEnumerator StartTheGame() 
+		{
+			while (true) 
+			{
+				if (!gameView.IsPlaying()) {
 					gameMain.FillTheField();
 				}
 

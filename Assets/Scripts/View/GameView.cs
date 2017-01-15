@@ -3,68 +3,92 @@ using UnityEngine;
 using Scripts.Util;
 using System.Collections;
 using DG.Tweening;
+using Scripts.Game;
 
-namespace Scripts.View {
-	public class GameView : MonoBehaviour {
+namespace Scripts.View 
+{
+	public class GameView : MonoBehaviour 
+	{
 		string[] deckNames;
 		List<GameObject> fields;
 		GameObject player;
-		bool isPlayer;
-		Bounds fieldSize;
+		bool isPlaying;
 
-		public void Prepare() {
+		Bounds sizeOfCard;
+
+		GameObject field;
+
+		public void Prepare() 
+		{
 			deckNames = new string[] { "BlueDeck", "WhiteDeck" };
 			fields = new List<GameObject>();
-			isPlayer = false;
+			isPlaying = false;
+			field = new GameObject();
+			field.transform.SetParent(transform);
+			field.name = "Field";
 		}
 
-		public void MergeField(int xOffset) {
-			var mergingCoroutine = StartCoroutine(StartMerging(xOffset));
+		public void MergeField(Position position, PlayerData playerData) 
+		{
+			StartCoroutine(StartMerging(position, playerData));
 		}
 
-		IEnumerator StartMerging(int xOffset) {
-			int xIndex = fields.IndexOf(player) + xOffset;
-			var field = fields[xIndex];
+		IEnumerator StartMerging(Position position, PlayerData playerData) 
+		{
+			int index = fields.IndexOf(player) + position.index;
+			var field = fields[index];
 			var character = player.transform.GetChild(1);
 			var characterAnimator = character.GetChild(0).GetComponent<Animator>();
 
-			isPlayer = true;
-			yield return StartCoroutine(Move(character.transform, characterAnimator, field.transform));
+			isPlaying = true;
+			yield return StartCoroutine(StartTakingCapture(player, field));
+			yield return StartCoroutine(Move(player, characterAnimator, field.transform));
 			yield return StartCoroutine(Merge(field, characterAnimator));
 			yield return StartCoroutine(End(field));
-			isPlayer = false;
+			isPlaying = false;
 		}
 
-		IEnumerator Move(Transform character, Animator characterAnimator, Transform field) {
+		IEnumerator Move(GameObject character, Animator characterAnimator, Transform field) 
+		{
+			SetVisibleOfValues(character, false);
 			characterAnimator.SetTrigger("walk");
-			character.SetParent(field.transform);
-			character.DOLocalMoveX(0, 2.0f).SetEase(Ease.Linear);
-			yield return new WaitForSeconds(2.0f);
+			character.transform.DOLocalMoveX(field.localPosition.x, 1.5f).SetEase(Ease.Linear);
+			yield return new WaitForSeconds(1.5f);
 		}
 
-		IEnumerator Merge(GameObject field, Animator characterAnimator) {
+		IEnumerator Merge(GameObject field, Animator characterAnimator) 
+		{
 			switch(field.name) {
 				case "Monster": characterAnimator.SetTrigger("attack"); break;
 				default: characterAnimator.SetTrigger("jesture"); break;
 			}
 
-			yield return new WaitForSeconds(0.75f);
-			var card = field.transform.GetChild(1).gameObject;
-			card.SetActive(false);
-			Destroy(card);
-			yield return new WaitForSeconds(0.75f);
+//			DOTween.Sequence()
+//				.SetDelay(0.4f)
+//				.Append(field.transform.DOScale(new Vector3(0.88f, 0.88f, 1), 0.05f).SetEase(Ease.OutExpo))
+//				.Append(field.transform.DOScale(new Vector3(1, 1, 1), 0.35f).SetEase(Ease.InElastic));
+
+			yield return new WaitForSeconds(0.5f);
+
+			SetVisibleOfValues(player, true);
+			field.SetActive(false);
+			Destroy(field);
+
+			yield return new WaitForSeconds(0.5f);
 		}
 
-		IEnumerator End(GameObject field) {
-			CopyValues(player, field);
-			player.gameObject.SetActive(false);
-			Destroy(player);
-
+		IEnumerator End(GameObject field) 
+		{
+//			CopyValues(player, field);
+//			player.gameObject.SetActive(false);
+//			Destroy(player);
 			player = field;
+
 			yield return null;
 		}
 
-		void CopyValues(GameObject source, GameObject target) {
+		void CopyValues(GameObject source, GameObject target) 
+		{
 			target.name = source.name;
 
 			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text = 
@@ -74,51 +98,86 @@ namespace Scripts.View {
 				source.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text;
 		}
 
-		public bool IsPlayer() {
-			return isPlayer;
+		void SetVisibleOfValues(GameObject target, bool visible) 
+		{
+			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().gameObject.SetActive(visible);
+			target.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().gameObject.SetActive(visible);
 		}
 
-		public void MakeField(int xIndex, string type, int value, string resourceName, string cardName) {
-			var field = new GameObject();
-			field.transform.SetParent(transform);
-			field.name = type;
+		public bool IsPlaying() 
+		{
+			return isPlaying;
+		}
+
+		public void MakeField(Position position, CardData cardData) 
+		{
+			var card = new GameObject();
+			card.transform.SetParent(field.transform);
+			card.name = cardData.type;
 
 			var deck = ResourceCache.Instantiate(deckNames[Random.Range(0, 2)], transform);
-			deck.transform.SetParent(field.transform);
-			deck.transform.Find("Name").GetComponent<TextMesh>().text = cardName;
-			deck.transform.Find("Value").GetComponent<TextMesh>().text = value.ToString();
-			fieldSize = field.GetBounds();
+			deck.transform.SetParent(card.transform);
+			sizeOfCard = card.GetBounds();
+			deck.transform.Find("Name").GetComponent<TextMesh>().text = cardData.cardName;
+			deck.transform.Find("Value").GetComponent<TextMesh>().text = cardData.value.ToString();
 
-			var card = ResourceCache.Instantiate(resourceName, transform);
-			card.transform.SetParent(field.transform);
+			var cardResource = ResourceCache.Instantiate(cardData.resourceName, transform);
+			cardResource.transform.SetParent(card.transform);
 
-			field.transform.localPosition = new Vector2((fieldSize.size.x + 0.1f) * xIndex, field.transform.localPosition.y);
-			fields.Add(field);
+			card.transform.localPosition = new Vector2((sizeOfCard.size.x + 0.1f) * position.col, (sizeOfCard.size.y + 0.1f) * position.row);
+			fields.Add(card);
 
-			if (type == "Player") {
-				player = field;
+			if (cardData.type == "Player")
+			{
+				player = card;
 			}
 
 			Align();
 		}
 
-		void Align() {
-			//		Bounds bounds = gameObject.GetBounds();
+		void Align() 
+		{
+//			var sizeOfField = field.GetBounds();
+//			field.transform.localPosition = new Vector3(
+//				(sizeOfCard.size.x - sizeOfField.size.x) / 2, 
+//				(sizeOfCard.size.y - sizeOfField.size.y) / 2, 
+//				field.transform.localPosition.z
+//			);
+		}
 
-			var playerIndex = fields.IndexOf(player);
-			var endIndexOfFields = fields.Count - 1;
-			int offset = (int)((endIndexOfFields - playerIndex) / 2);
-			var centerField = fields[playerIndex+offset];
+		IEnumerator StartTakingCapture(GameObject player, GameObject field) 
+		{
+			yield return new WaitForEndOfFrame();
 
-			var mainCamera = Camera.main;
-			mainCamera.transform.DOLocalMoveX(centerField.transform.localPosition.x, .4f);
+			Bounds bounds = field.GetBounds();
+			Vector3 center = Camera.main.WorldToScreenPoint(bounds.center);
+			Vector3 leftBottom = Camera.main.WorldToScreenPoint(bounds.min);
+			Vector3 rightTop = Camera.main.WorldToScreenPoint(bounds.max);
+			Vector3 size = rightTop - leftBottom;
+			var captured = new Texture2D((int)size.x, (int)size.y, TextureFormat.ARGB32, false);
 
+			Debug.Log($"Capturing: {center.x}, {center.y}, {rightTop.x}, {rightTop.y}, {leftBottom.x}, {leftBottom.y}, {size.x}, {size.y}");
+			captured.ReadPixels(new Rect(
+				leftBottom.x,
+				leftBottom.y,
+				size.x,
+				size.y
+			), 0, 0);
+			captured.Apply();
 
-			//		var screenX = Camera.main.ScreenToWorldPoint(new Vector3(1080, 0, 0)).x;
-			//		transform.DOMove(new Vector2(
-			//			fieldSize.extents.x - bounds.size.x/2,
-			//			transform.localPosition.y
-			//		), 1);
+			Sprite capturedSprite = Sprite.Create(
+				captured,
+				new Rect(0, 0, (int)size.x, (int)size.y),
+				new Vector2(0.5f,0.5f),
+				Screen.height / Camera.main.orthographicSize / 2
+			);
+
+			var capturedCard = new GameObject();
+			var spriteRenderer = capturedCard.AddComponent<SpriteRenderer>();
+			spriteRenderer.sprite = capturedSprite;
+			spriteRenderer.sortingOrder = -player.transform.childCount;
+			capturedCard.name = field.name;
+			capturedCard.transform.SetParent(player.transform);
 		}
 	}
 
