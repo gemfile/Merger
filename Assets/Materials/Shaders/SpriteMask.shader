@@ -74,9 +74,6 @@
 		fixed4 c = tex2D(_MainTex, IN.texcoord) * IN.color;
 	c.rgb *= c.a;
 
-	if (c.a < 0.1)
-		discard;
-	
 	return c;
 	}
 		ENDCG
