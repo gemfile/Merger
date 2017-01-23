@@ -1,4 +1,4 @@
-﻿namespace Scripts.Game.Card 
+﻿namespace com.Gemfile.Merger 
 {
 	public class CardBase: ICard 
 	{

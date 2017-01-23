@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Scripts.Util;
 using System.Collections;
 using DG.Tweening;
-using Scripts.Game;
 using System.Linq;
 
-namespace Scripts.View 
+namespace com.Gemfile.Merger 
 {
 	public class GameView : MonoBehaviour 
 	{
@@ -21,7 +19,7 @@ namespace Scripts.View
 
 		public void Prepare() 
 		{
-			deckNames = new string[] { "BlueDeck", "WhiteDeck" };
+			deckNames = new string[] { "Deck" };
 			isPlaying = false;
 			fields = new Dictionary<int, GameObject>();
 			field = new GameObject();
@@ -49,7 +47,7 @@ namespace Scripts.View
 			isPlaying = true;
 			yield return StartCoroutine(StartTakingCapture(player, targetCard));
 			yield return StartCoroutine(Move(player, characterAnimator, targetCard.transform));
-			yield return StartCoroutine(Merge(targetCard, characterAnimator));
+			yield return StartCoroutine(Merge(targetCard, characterAnimator, playerData));
 //			yield return StartCoroutine(End(targetCard));
 			isPlaying = false;
 		}
@@ -64,7 +62,7 @@ namespace Scripts.View
 			yield return new WaitForSeconds(0.4f);
 		}
 
-		IEnumerator Merge(GameObject targetCard, Animator characterAnimator)
+		IEnumerator Merge(GameObject targetCard, Animator characterAnimator, PlayerData playerData)
 		{
 			switch(targetCard.name) {
 				case "Monster": characterAnimator.SetTrigger("attack"); break;
@@ -74,6 +72,7 @@ namespace Scripts.View
 			yield return new WaitForSeconds(0.4f);
 
 			SetVisibleOfValues(player, true);
+			SetValues(player, playerData.hp.ToString());
 			targetCard.SetActive(false);
 			Destroy(targetCard);
 
@@ -100,6 +99,11 @@ namespace Scripts.View
 				source.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text;
 		}
 
+		void SetValues(GameObject target, string value)
+		{
+			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text = value;
+		}
+
 		void SetVisibleOfValues(GameObject target, bool visible) 
 		{
 			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().gameObject.SetActive(visible);
@@ -117,7 +121,7 @@ namespace Scripts.View
 			card.transform.SetParent(field.transform);
 			card.name = cardData.type;
 
-			var deck = ResourceCache.Instantiate(deckNames[Random.Range(0, 2)], transform);
+			var deck = ResourceCache.Instantiate(deckNames[Random.Range(0, 1)], transform);
 			deck.transform.SetParent(card.transform);
 			sizeOfCard = card.GetBounds();
 			deck.transform.Find("Name").GetComponent<TextMesh>().text = cardData.cardName;

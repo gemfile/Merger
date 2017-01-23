@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Scripts.Game.Card;
 using UnityEngine.Events;
-using Scripts.Util;
 using System;
 using System.Linq;
 
-namespace Scripts.Game 
+namespace com.Gemfile.Merger 
 {
 	public class FieldAddingEvent: UnityEvent<Position, CardData> {}
 	public class FieldMergingEvent: UnityEvent<Position, PlayerData> {}
@@ -60,6 +58,10 @@ namespace Scripts.Game
 		readonly Dictionary<int, ICard> fields;
 		Queue<ICard> deckQueue;
 		Player player;
+		Queue<Monster> monsterQueue;
+
+		List<string> phaseOfGame;
+		int currentIndexOfPhase;
 
 		public GameMain() 
 		{
@@ -68,6 +70,9 @@ namespace Scripts.Game
 			fieldMergingEvent = new FieldMergingEvent();
 			fieldPreparingEvent = new FieldPreparingEvent();
 			countOfFields = rows * cols;
+			phaseOfGame = new List<string>{ "offense", "defense", "fill" };
+			currentIndexOfPhase = phaseOfGame.IndexOf("fill");
+			monsterQueue = new Queue<Monster>();
 		}
 
 		public void Prepare() 
@@ -77,7 +82,7 @@ namespace Scripts.Game
 			MakeAPlayer();
 		}
 
-		void SetFields() 
+		void SetFields()
 		{
 			Enumerable.Range(0, countOfFields).ForEach(index => fields.Add(index, new Empty()));
 			fieldPreparingEvent.Invoke(countOfFields);
@@ -167,7 +172,7 @@ namespace Scripts.Game
 			var deckList = new List<ICard>();
 			cardDataList.ForEach(cardData => {
 				var card = (ICard)Activator.CreateInstance(
-					Type.GetType("Scripts.Game.Card." + cardData.type), 
+					Type.GetType("com.Gemfile.Merger." + cardData.type), 
 					cardData
 				);
 				deckList.Add(card);
@@ -176,9 +181,56 @@ namespace Scripts.Game
 			return deckList;
 		}
 
-		public void FillTheField() 
+		public void Update() 
 		{
-			if (fields.Values.Any(field => field is Empty)) 
+			var previousPhase = GetPreviousPhase();
+			var currentPhase = GetCurrentPhase();
+			if(currentPhase == "offense")
+			{
+				int playerIndex = GetIndex(player);
+
+				var mergingCoordinates = new List<int[]> {
+					new int[2]{ -1, 0 },
+					new int[2]{ 1, 0 },
+					new int[2]{ 0, -1 },
+					new int[2]{ 0, 1 },
+				};
+
+				Debug.Log("=== Aggregate ===");
+				var canMerge = mergingCoordinates.Aggregate(false, (result, mergingCoordinate) => {
+					bool isMovable = IsMovable(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
+
+					if(isMovable) {
+						var mergingindex = GetCardIndex(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
+						ICard card = GetCard(mergingindex);
+						result = result || (card != null && !CantMerge(card));
+					}
+
+					return result;
+				});
+
+				if (!canMerge) {
+					SetNextPhase();
+				}
+				Debug.Log($"Can not merge anywhere! {!canMerge}");
+			}
+
+			if (currentPhase == "defense") 
+			{
+				if (previousPhase == "offense") {
+					fields.Where(field => field.Value is Monster).ForEach(field => monsterQueue.Enqueue((Monster)field.Value));
+				}
+
+				if (monsterQueue.Count > 0) {
+					var monster = monsterQueue.Dequeue();
+					Move(monster);
+				} else {
+					SetNextPhase();
+				}
+			}
+			
+			// Field the fields.
+			if (currentPhase == "fill" && fields.Values.Any(field => field is Empty)) 
 			{
 				var emptyFields = fields.Where(field => field.Value is Empty).ToDictionary(p => p.Key, p => p.Value);
 				emptyFields.ForEach(emptyField => AddAField(emptyField.Key, deckQueue.Dequeue()));
@@ -187,7 +239,34 @@ namespace Scripts.Game
 				int count = 0;
 				fields.ForEach(icard => Debug.Log(icard.Value.GetType() + ", " + icard.Value.GetValue() + ", " + count++));
 				Debug.Log("===============");
+				SetNextPhase();
 			}
+		}
+
+		void SetNextPhase() 
+		{
+			currentIndexOfPhase++;
+			if (currentIndexOfPhase >= phaseOfGame.Count) 
+			{
+				currentIndexOfPhase = 0;
+			}
+			Debug.Log($"What's next? {GetCurrentPhase()}");
+		}
+
+		string GetCurrentPhase()
+		{
+			return phaseOfGame[currentIndexOfPhase];
+		}
+
+		string GetPreviousPhase()
+		{
+			var previousIndexOfPhase = currentIndexOfPhase - 1;
+			if (previousIndexOfPhase < 0) 
+			{
+				previousIndexOfPhase = phaseOfGame.Count - 1;
+			}
+
+			return phaseOfGame[previousIndexOfPhase];
 		}
 
 		void AddAField(int key, ICard card) 
@@ -204,32 +283,75 @@ namespace Scripts.Game
 			);
 		}
 
-		int GetPlayerIndex() 
+		int GetIndex(ICard card) 
 		{
-			return fields.FirstOrDefault(x => x.Value == player).Key;
+			return fields.FirstOrDefault(field => field.Value == card).Key;
 		}
 
 		public bool IsNearFromPlayer(int index) 
 		{
-			return (Mathf.Abs(index - GetPlayerIndex()) == 1);
+			return (Mathf.Abs(index - GetIndex(player)) == 1);
 		}
 
-		public void Merge(int xOffset, int yOffset) 
+		public void Merge(int colOffset, int rowOffset) 
 		{
-			var playerIndex = GetPlayerIndex();
-			var mergingIndex = playerIndex + (xOffset + yOffset * cols);
+			var playerIndex = GetIndex(player);
 
-			if (mergingIndex >= 0 && mergingIndex < fields.Count) 
+			if (IsMovable(playerIndex, colOffset, rowOffset)) 
 			{
-				ICard card = fields[mergingIndex];
-				PlayerData playerData = player.Merge(card);
-				fields[mergingIndex] = player;
-				fields[playerIndex] = new Empty();
-				fieldMergingEvent.Invoke(
-					new Position(mergingIndex),
-					playerData
-				);				
+				var mergingIndex = GetCardIndex(playerIndex, colOffset, rowOffset);
+				ICard card = GetCard(mergingIndex);
+				if (card != null && !CantMerge(card)) 
+				{
+					PlayerData playerData = player.Merge(card);
+					fields[mergingIndex] = player;
+					fields[playerIndex] = new Empty();
+					fieldMergingEvent.Invoke(
+						new Position(mergingIndex),
+						playerData
+					);				
+				}
 			}
+		}
+
+		void Move(Monster monster)
+		{
+			var monsterIndex = new Position(GetIndex(monster));
+			var playerIndex = new Position(GetIndex(player));
+
+			Debug.Log("=== Move ===");
+			Debug.Log($"monsterIndex: {monsterIndex.col}, {monsterIndex.row}");
+			Debug.Log($"playerIndex: {playerIndex.col}, {playerIndex.row}");
+		}
+
+		bool IsMovable(int pivot, int colOffset, int rowOffset) 
+		{
+			var playerPosition = new Position(pivot);
+			int colNext = playerPosition.col + colOffset;
+			int rowNext = playerPosition.row + rowOffset;
+			return colNext >= 0 && colNext < cols && rowNext >= 0 && rowNext < rows;
+		}
+
+		int GetCardIndex(int pivot, int colOffset, int rowOffset)
+		{
+			return pivot + (colOffset + rowOffset * cols);
+		}
+
+		ICard GetCard(int index) 
+		{
+			if (index >= 0 && index < fields.Count) {
+				return fields[index];
+			} else {
+				return null;
+			}
+		}
+
+		bool CantMerge(ICard target) 
+		{
+			return (
+				target is Empty ||
+				(target is Monster && player.Atk <= 0)
+			);
 		}
 
 		public bool IsOver 

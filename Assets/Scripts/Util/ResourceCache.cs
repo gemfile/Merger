@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-namespace Scripts.Util 
+namespace com.Gemfile.Merger 
 {
 	public static class ResourceCache 
 	{

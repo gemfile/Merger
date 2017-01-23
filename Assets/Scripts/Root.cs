@@ -1,16 +1,14 @@
 ﻿using UnityEngine;
-using Scripts.Game;
 using System.Collections;
-using Scripts.Util;
-using Scripts.View;
 
-namespace Scripts 
+namespace com.Gemfile.Merger 
 {
 	public class Root: MonoBehaviour 
 	{
 		readonly GameMain gameMain;
 		[SerializeField]
 		GameView gameView;
+		GameUi gameUi;
 		Swipe swipe;
 
 		Root() 
@@ -29,15 +27,27 @@ namespace Scripts
 			PrepareAView();
 			PrepareAGame();
 			StartCoroutine("StartTheGame");
+			ListenToInput();
+			AlignGameViewAtTop();
+		}
+
+		void AlignGameViewAtTop() 
+		{
+			var sizeOfScreen = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height));
+			var sizeOfGameView = gameView.gameObject.GetBounds();
+			var positionOfGameView = gameView.transform.localPosition;
+			gameView.transform.localPosition = new Vector3(positionOfGameView.x, sizeOfScreen.y - sizeOfGameView.extents.y - sizeOfGameView.center.y, positionOfGameView.z);
+		}
+
+		void ListenToInput() 
+		{
 			swipe = gameObject.AddComponent<Swipe>();
 			swipe.swipeEvent.AddListener(swipeInfo => {
-				if(swipeInfo.hasPass) {
-					switch(swipeInfo.direction) {
-						case Direction.Right: gameMain.Merge(1, 0); break;
-						case Direction.Left: gameMain.Merge(-1, 0); break;
-						case Direction.Up: gameMain.Merge(0, 1); break;
-						case Direction.Down: gameMain.Merge(0, -1); break;
-					}
+				switch(swipeInfo.direction) {
+					case Direction.Right: gameMain.Merge(1, 0); break;
+					case Direction.Left: gameMain.Merge(-1, 0); break;
+					case Direction.Up: gameMain.Merge(0, 1); break;
+					case Direction.Down: gameMain.Merge(0, -1); break;
 				}
 			});
 		}
@@ -56,7 +66,7 @@ namespace Scripts
 			gameMain.Prepare();
 		}
 
-		void PrepareAView() 
+		void PrepareAView()
 		{
 			gameView.Prepare();
 		}
@@ -66,7 +76,7 @@ namespace Scripts
 			while (true) 
 			{
 				if (!gameView.IsPlaying()) {
-					gameMain.FillTheField();
+					gameMain.Update();
 				}
 
 				if (gameMain.IsOver) {

@@ -2,7 +2,7 @@
 using UnityEngine;
 using System;
 
-namespace Scripts.Util 
+namespace com.Gemfile.Merger 
 {
     public static class ExtensionMethods 
 	{

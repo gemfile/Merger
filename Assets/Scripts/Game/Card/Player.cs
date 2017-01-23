@@ -1,8 +1,7 @@
 ﻿using System;
 using UnityEngine;
-using Scripts.Game.Card;
 
-namespace Scripts.Game.Card 
+namespace com.Gemfile.Merger 
 {
 	public class Player: CardBase 
 	{
@@ -15,6 +14,11 @@ namespace Scripts.Game.Card
 		public int Hp 
 		{
 			get { return hp; }
+		}
+
+		public int Atk
+		{
+			get { return atk; }
 		}
 
 		public Player(CardData cardData): base(cardData) 

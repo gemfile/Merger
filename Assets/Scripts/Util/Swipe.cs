@@ -2,7 +2,7 @@
 using System;
 using UnityEngine.Events;
 
-namespace Scripts.Util 
+namespace com.Gemfile.Merger 
 {
 	[System.Serializable]
 	public class SwipeEvent: UnityEvent<SwipeInfo> {}
