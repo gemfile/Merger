@@ -4,13 +4,14 @@ using Scripts.Util;
 using System.Collections;
 using DG.Tweening;
 using Scripts.Game;
+using System.Linq;
 
 namespace Scripts.View 
 {
 	public class GameView : MonoBehaviour 
 	{
 		string[] deckNames;
-		List<GameObject> fields;
+		Dictionary<int, GameObject> fields;
 		GameObject player;
 		bool isPlaying;
 
@@ -21,11 +22,16 @@ namespace Scripts.View
 		public void Prepare() 
 		{
 			deckNames = new string[] { "BlueDeck", "WhiteDeck" };
-			fields = new List<GameObject>();
 			isPlaying = false;
+			fields = new Dictionary<int, GameObject>();
 			field = new GameObject();
 			field.transform.SetParent(transform);
 			field.name = "Field";
+		}
+
+		public void PrepareField(int countOfFields)
+		{
+			Enumerable.Range(0, countOfFields).ForEach(index => fields.Add(index, null));
 		}
 
 		public void MergeField(Position position, PlayerData playerData) 
@@ -35,54 +41,50 @@ namespace Scripts.View
 
 		IEnumerator StartMerging(Position position, PlayerData playerData) 
 		{
-			int index = fields.IndexOf(player) + position.index;
-			var field = fields[index];
+			var targetCard = fields[position.index];
+			Debug.Log("StartMerging : " + position.index + ", " + targetCard.name);
 			var character = player.transform.GetChild(1);
 			var characterAnimator = character.GetChild(0).GetComponent<Animator>();
 
 			isPlaying = true;
-			yield return StartCoroutine(StartTakingCapture(player, field));
-			yield return StartCoroutine(Move(player, characterAnimator, field.transform));
-			yield return StartCoroutine(Merge(field, characterAnimator));
-			yield return StartCoroutine(End(field));
+			yield return StartCoroutine(StartTakingCapture(player, targetCard));
+			yield return StartCoroutine(Move(player, characterAnimator, targetCard.transform));
+			yield return StartCoroutine(Merge(targetCard, characterAnimator));
+//			yield return StartCoroutine(End(targetCard));
 			isPlaying = false;
 		}
 
-		IEnumerator Move(GameObject character, Animator characterAnimator, Transform field) 
+		IEnumerator Move(GameObject character, Animator characterAnimator, Transform targetCard) 
 		{
 			SetVisibleOfValues(character, false);
 			characterAnimator.SetTrigger("walk");
-			character.transform.DOLocalMoveX(field.localPosition.x, 1.5f).SetEase(Ease.Linear);
-			yield return new WaitForSeconds(1.5f);
+			character.transform.DOLocalMove(
+				new Vector3(targetCard.localPosition.x, targetCard.localPosition.y, character.transform.localPosition.z), 0.4f
+			).SetEase(Ease.OutSine);
+			yield return new WaitForSeconds(0.4f);
 		}
 
-		IEnumerator Merge(GameObject field, Animator characterAnimator) 
+		IEnumerator Merge(GameObject targetCard, Animator characterAnimator)
 		{
-			switch(field.name) {
+			switch(targetCard.name) {
 				case "Monster": characterAnimator.SetTrigger("attack"); break;
 				default: characterAnimator.SetTrigger("jesture"); break;
 			}
 
-//			DOTween.Sequence()
-//				.SetDelay(0.4f)
-//				.Append(field.transform.DOScale(new Vector3(0.88f, 0.88f, 1), 0.05f).SetEase(Ease.OutExpo))
-//				.Append(field.transform.DOScale(new Vector3(1, 1, 1), 0.35f).SetEase(Ease.InElastic));
-
-			yield return new WaitForSeconds(0.5f);
+			yield return new WaitForSeconds(0.4f);
 
 			SetVisibleOfValues(player, true);
-			field.SetActive(false);
-			Destroy(field);
+			targetCard.SetActive(false);
+			Destroy(targetCard);
 
-			yield return new WaitForSeconds(0.5f);
+			yield return new WaitForSeconds(0.4f);
 		}
 
-		IEnumerator End(GameObject field) 
+		IEnumerator End(GameObject targetCard) 
 		{
-//			CopyValues(player, field);
+//			CopyValues(player, targetCard);
 //			player.gameObject.SetActive(false);
 //			Destroy(player);
-			player = field;
 
 			yield return null;
 		}
@@ -104,7 +106,7 @@ namespace Scripts.View
 			target.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().gameObject.SetActive(visible);
 		}
 
-		public bool IsPlaying() 
+		public bool IsPlaying()
 		{
 			return isPlaying;
 		}
@@ -125,7 +127,7 @@ namespace Scripts.View
 			cardResource.transform.SetParent(card.transform);
 
 			card.transform.localPosition = new Vector2((sizeOfCard.size.x + 0.1f) * position.col, (sizeOfCard.size.y + 0.1f) * position.row);
-			fields.Add(card);
+			fields[position.index] = card;
 
 			if (cardData.type == "Player")
 			{
@@ -135,21 +137,21 @@ namespace Scripts.View
 			Align();
 		}
 
-		void Align() 
+		void Align()
 		{
-//			var sizeOfField = field.GetBounds();
-//			field.transform.localPosition = new Vector3(
-//				(sizeOfCard.size.x - sizeOfField.size.x) / 2, 
-//				(sizeOfCard.size.y - sizeOfField.size.y) / 2, 
-//				field.transform.localPosition.z
-//			);
+			var sizeOfField = field.GetBounds();
+			field.transform.localPosition = new Vector3(
+				(sizeOfCard.size.x - sizeOfField.size.x) / 2, 
+				(sizeOfCard.size.y - sizeOfField.size.y) / 2, 
+				field.transform.localPosition.z
+			);
 		}
 
-		IEnumerator StartTakingCapture(GameObject player, GameObject field) 
+		IEnumerator StartTakingCapture(GameObject player, GameObject targetCard) 
 		{
 			yield return new WaitForEndOfFrame();
 
-			Bounds bounds = field.GetBounds();
+			Bounds bounds = targetCard.GetBounds();
 			Vector3 center = Camera.main.WorldToScreenPoint(bounds.center);
 			Vector3 leftBottom = Camera.main.WorldToScreenPoint(bounds.min);
 			Vector3 rightTop = Camera.main.WorldToScreenPoint(bounds.max);
@@ -176,8 +178,9 @@ namespace Scripts.View
 			var spriteRenderer = capturedCard.AddComponent<SpriteRenderer>();
 			spriteRenderer.sprite = capturedSprite;
 			spriteRenderer.sortingOrder = -player.transform.childCount;
-			capturedCard.name = field.name;
+			capturedCard.name = targetCard.name;
 			capturedCard.transform.SetParent(player.transform);
+			capturedCard.transform.localPosition = new Vector3(0, 0, 0);
 		}
 	}
 

@@ -44,12 +44,13 @@ namespace Scripts
 
 		void PrepareAGame() 
 		{
+			gameMain.fieldPreparingEvent.AddListener(gameView.PrepareField);
 			gameMain.fieldAddingEvent.AddListener((position, cardData) => {
 				Debug.Log($"fieldAdding: {position.row}, {position.col}, {cardData.type}, {cardData.value}, {cardData.resourceName}, {cardData.cardName}");
 				gameView.MakeField(position, cardData);
 			});
 			gameMain.fieldMergingEvent.AddListener((position, playerData) => {
-				Debug.Log($"fieldRemoving: {position.row}, {position.col}");
+				Debug.Log($"fieldMerging: {position.row}, {position.col}");
 				gameView.MergeField(position, playerData);
 			});
 			gameMain.Prepare();

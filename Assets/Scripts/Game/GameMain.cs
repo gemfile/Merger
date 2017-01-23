@@ -10,6 +10,7 @@ namespace Scripts.Game
 {
 	public class FieldAddingEvent: UnityEvent<Position, CardData> {}
 	public class FieldMergingEvent: UnityEvent<Position, PlayerData> {}
+	public class FieldPreparingEvent: UnityEvent<int> {}
 
 	public class Position
 	{
@@ -50,8 +51,9 @@ namespace Scripts.Game
 	{
 		public static readonly int cols = 3;
 		public static readonly int rows = 3;
-		readonly int fieldsCount;
+		readonly int countOfFields;
 
+		public FieldPreparingEvent fieldPreparingEvent;
 		public FieldAddingEvent fieldAddingEvent;
 		public FieldMergingEvent fieldMergingEvent;
 
@@ -64,7 +66,8 @@ namespace Scripts.Game
 			fields = new Dictionary<int, ICard>();
 			fieldAddingEvent = new FieldAddingEvent();
 			fieldMergingEvent = new FieldMergingEvent();
-			fieldsCount = rows * cols;
+			fieldPreparingEvent = new FieldPreparingEvent();
+			countOfFields = rows * cols;
 		}
 
 		public void Prepare() 
@@ -76,7 +79,8 @@ namespace Scripts.Game
 
 		void SetFields() 
 		{
-			Enumerable.Range(0, fieldsCount).ForEach(index => fields.Add(index, new Empty()));
+			Enumerable.Range(0, countOfFields).ForEach(index => fields.Add(index, new Empty()));
+			fieldPreparingEvent.Invoke(countOfFields);
 		}
 
 		void MakeAPlayer()
