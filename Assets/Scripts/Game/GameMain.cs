@@ -8,6 +8,7 @@ namespace com.Gemfile.Merger
 {
 	public class FieldAddingEvent: UnityEvent<Position, CardData> {}
 	public class FieldMergingEvent: UnityEvent<Position, PlayerData> {}
+	public class FieldMovingEvent: UnityEvent<Position, Position> {}
 	public class FieldPreparingEvent: UnityEvent<int> {}
 
 	public class Position
@@ -45,6 +46,12 @@ namespace com.Gemfile.Merger
 		public Empty(): base(null) {}
 	}
 
+	public enum PhaseOfGame
+	{
+		FILL = 0,
+		PLAY
+	}
+
 	public class GameMain 
 	{
 		public static readonly int cols = 3;
@@ -54,13 +61,14 @@ namespace com.Gemfile.Merger
 		public FieldPreparingEvent fieldPreparingEvent;
 		public FieldAddingEvent fieldAddingEvent;
 		public FieldMergingEvent fieldMergingEvent;
+		public FieldMovingEvent fieldMovingEvent;
 
 		readonly Dictionary<int, ICard> fields;
 		Queue<ICard> deckQueue;
 		Player player;
 		Queue<Monster> monsterQueue;
 
-		List<string> phaseOfGame;
+		List<PhaseOfGame> phaseOfGame;
 		int currentIndexOfPhase;
 
 		public GameMain() 
@@ -69,9 +77,10 @@ namespace com.Gemfile.Merger
 			fieldAddingEvent = new FieldAddingEvent();
 			fieldMergingEvent = new FieldMergingEvent();
 			fieldPreparingEvent = new FieldPreparingEvent();
+			fieldMovingEvent = new FieldMovingEvent();
 			countOfFields = rows * cols;
-			phaseOfGame = new List<string>{ "offense", "defense", "fill" };
-			currentIndexOfPhase = phaseOfGame.IndexOf("fill");
+			phaseOfGame = new List<PhaseOfGame>{ PhaseOfGame.FILL, PhaseOfGame.PLAY };
+			currentIndexOfPhase = phaseOfGame.IndexOf(PhaseOfGame.FILL);
 			monsterQueue = new Queue<Monster>();
 		}
 
@@ -172,7 +181,7 @@ namespace com.Gemfile.Merger
 			var deckList = new List<ICard>();
 			cardDataList.ForEach(cardData => {
 				var card = (ICard)Activator.CreateInstance(
-					Type.GetType("com.Gemfile.Merger." + cardData.type), 
+					Type.GetType("com.Gemfile.Merger." + cardData.type),
 					cardData
 				);
 				deckList.Add(card);
@@ -181,11 +190,12 @@ namespace com.Gemfile.Merger
 			return deckList;
 		}
 
-		public void Update() 
+		public void Update()
 		{
 			var previousPhase = GetPreviousPhase();
 			var currentPhase = GetCurrentPhase();
-			if(currentPhase == "offense")
+
+			if(currentPhase == PhaseOfGame.PLAY)
 			{
 				int playerIndex = GetIndex(player);
 
@@ -196,7 +206,6 @@ namespace com.Gemfile.Merger
 					new int[2]{ 0, 1 },
 				};
 
-				Debug.Log("=== Aggregate ===");
 				var canMerge = mergingCoordinates.Aggregate(false, (result, mergingCoordinate) => {
 					bool isMovable = IsMovable(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
 
@@ -210,27 +219,13 @@ namespace com.Gemfile.Merger
 				});
 
 				if (!canMerge) {
-					SetNextPhase();
-				}
-				Debug.Log($"Can not merge anywhere! {!canMerge}");
-			}
-
-			if (currentPhase == "defense") 
-			{
-				if (previousPhase == "offense") {
-					fields.Where(field => field.Value is Monster).ForEach(field => monsterQueue.Enqueue((Monster)field.Value));
-				}
-
-				if (monsterQueue.Count > 0) {
-					var monster = monsterQueue.Dequeue();
-					Move(monster);
-				} else {
-					SetNextPhase();
+//					SetNextPhase();
+					Debug.Log($"Can not merge anywhere! {!canMerge}");
 				}
 			}
 			
-			// Field the fields.
-			if (currentPhase == "fill" && fields.Values.Any(field => field is Empty)) 
+			// Fill the fields.
+			if (currentPhase == PhaseOfGame.FILL && fields.Values.Any(field => field is Empty))
 			{
 				var emptyFields = fields.Where(field => field.Value is Empty).ToDictionary(p => p.Key, p => p.Value);
 				emptyFields.ForEach(emptyField => AddAField(emptyField.Key, deckQueue.Dequeue()));
@@ -243,25 +238,25 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		void SetNextPhase() 
+		void SetNextPhase()
 		{
 			currentIndexOfPhase++;
-			if (currentIndexOfPhase >= phaseOfGame.Count) 
+			if (currentIndexOfPhase >= phaseOfGame.Count)
 			{
 				currentIndexOfPhase = 0;
 			}
 			Debug.Log($"What's next? {GetCurrentPhase()}");
 		}
 
-		string GetCurrentPhase()
+		PhaseOfGame GetCurrentPhase()
 		{
 			return phaseOfGame[currentIndexOfPhase];
 		}
 
-		string GetPreviousPhase()
+		PhaseOfGame GetPreviousPhase()
 		{
 			var previousIndexOfPhase = currentIndexOfPhase - 1;
-			if (previousIndexOfPhase < 0) 
+			if (previousIndexOfPhase < 0)
 			{
 				previousIndexOfPhase = phaseOfGame.Count - 1;
 			}
@@ -269,39 +264,44 @@ namespace com.Gemfile.Merger
 			return phaseOfGame[previousIndexOfPhase];
 		}
 
-		void AddAField(int key, ICard card) 
+		void AddAField(int key, ICard card)
 		{
 			fields[key] = card;
 			fieldAddingEvent.Invoke(
 				new Position(key),
 				new CardData {
-					type = card.GetType().Name, 
-					value = card.GetValue(), 
-					resourceName = card.GetResourceName(), 
+					type = card.GetType().Name,
+					value = card.GetValue(),
+					resourceName = card.GetResourceName(),
 					cardName = card.GetCardName()
 				}
 			);
 		}
 
-		int GetIndex(ICard card) 
+		int GetIndex(ICard card)
 		{
 			return fields.FirstOrDefault(field => field.Value == card).Key;
 		}
 
-		public bool IsNearFromPlayer(int index) 
+		public bool IsNearFromPlayer(int index)
 		{
 			return (Mathf.Abs(index - GetIndex(player)) == 1);
 		}
 
-		public void Merge(int colOffset, int rowOffset) 
+		public void Merge(int colOffset, int rowOffset)
 		{
 			var playerIndex = GetIndex(player);
+//			while (IsMovable(playerIndex, colOffset, rowOffset)) 
+// 			{
+//				colOffset = colOffset + colOffset;
+//				rowOffset = rowOffset + rowOffset;
+//			}
 
-			if (IsMovable(playerIndex, colOffset, rowOffset)) 
+			if (IsMovable(playerIndex, colOffset, rowOffset))
 			{
 				var mergingIndex = GetCardIndex(playerIndex, colOffset, rowOffset);
 				ICard card = GetCard(mergingIndex);
-				if (card != null && !CantMerge(card)) 
+				if (card != null && !CantMerge(card))
 				{
 					PlayerData playerData = player.Merge(card);
 					fields[mergingIndex] = player;
@@ -309,22 +309,36 @@ namespace com.Gemfile.Merger
 					fieldMergingEvent.Invoke(
 						new Position(mergingIndex),
 						playerData
-					);				
+					);
+					Move(playerIndex, colOffset, rowOffset);
 				}
 			}
 		}
 
-		void Move(Monster monster)
+		void Move(int targetIndex, int colOffset, int rowOffset)
 		{
-			var monsterIndex = new Position(GetIndex(monster));
-			var playerIndex = new Position(GetIndex(player));
-
-			Debug.Log("=== Move ===");
-			Debug.Log($"monsterIndex: {monsterIndex.col}, {monsterIndex.row}");
-			Debug.Log($"playerIndex: {playerIndex.col}, {playerIndex.row}");
+			if (IsMovable(targetIndex, -colOffset, -rowOffset))
+			{
+				var cardIndex = GetCardIndex(targetIndex, -colOffset, -rowOffset);
+				ICard card = GetCard(cardIndex);
+				if (card != null)
+				{
+					fields[targetIndex] = card;
+					fields[cardIndex] = new Empty();
+					fieldMovingEvent.Invoke(
+						new Position(targetIndex),
+						new Position(cardIndex)
+					);
+					Move(cardIndex, colOffset, rowOffset);
+				}
+			}
+			else
+			{
+				SetNextPhase();
+			}
 		}
 
-		bool IsMovable(int pivot, int colOffset, int rowOffset) 
+		bool IsMovable(int pivot, int colOffset, int rowOffset)
 		{
 			var playerPosition = new Position(pivot);
 			int colNext = playerPosition.col + colOffset;
@@ -337,16 +351,19 @@ namespace com.Gemfile.Merger
 			return pivot + (colOffset + rowOffset * cols);
 		}
 
-		ICard GetCard(int index) 
+		ICard GetCard(int index)
 		{
-			if (index >= 0 && index < fields.Count) {
+			if (index >= 0 && index < fields.Count)
+			{
 				return fields[index];
-			} else {
+			}
+			else
+			{
 				return null;
 			}
 		}
 
-		bool CantMerge(ICard target) 
+		bool CantMerge(ICard target)
 		{
 			return (
 				target is Empty ||
@@ -354,7 +371,7 @@ namespace com.Gemfile.Merger
 			);
 		}
 
-		public bool IsOver 
+		public bool IsOver
 		{
 			get { return player.Hp <= 0; }
 		}

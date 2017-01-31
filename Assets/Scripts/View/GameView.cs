@@ -37,32 +37,51 @@ namespace com.Gemfile.Merger
 			StartCoroutine(StartMerging(position, playerData));
 		}
 
-		IEnumerator StartMerging(Position position, PlayerData playerData) 
+		public void MoveField(Position targetPosition, Position cardPosition)
 		{
-			var targetCard = fields[position.index];
-			Debug.Log("StartMerging : " + position.index + ", " + targetCard.name);
+			StartCoroutine(StartMoving(targetPosition, cardPosition));
+		}
+
+		IEnumerator StartMoving(Position targetPosition, Position cardPosition)
+		{
+			var movingCard = fields[cardPosition.index];
+			var targetLocalPosition = new Vector2((sizeOfCard.size.x + 0.1f) * targetPosition.col, (sizeOfCard.size.y + 0.1f) * targetPosition.row);
+			Debug.Log("StartMoving : " + cardPosition.index + ", " + movingCard.name);
+
+			movingCard.transform.DOLocalMove(
+				new Vector2(targetLocalPosition.x, targetLocalPosition.y), 0.4f
+			).SetEase(Ease.OutSine);
+			fields[targetPosition.index] = movingCard;
+
+			yield return new WaitForSeconds(0.4f);
+		}
+
+		IEnumerator StartMerging(Position targetPosition, PlayerData playerData) 
+		{
+			var mergingCard = fields[targetPosition.index];
+			Debug.Log("StartMerging : " + targetPosition.index + ", " + mergingCard.name);
 			var character = player.transform.GetChild(1);
 			var characterAnimator = character.GetChild(0).GetComponent<Animator>();
 
 			isPlaying = true;
-			yield return StartCoroutine(StartTakingCapture(player, targetCard));
-			yield return StartCoroutine(Move(player, characterAnimator, targetCard.transform));
-			yield return StartCoroutine(Merge(targetCard, characterAnimator, playerData));
-//			yield return StartCoroutine(End(targetCard));
+			yield return StartCoroutine(TakeCapture(player, mergingCard));
+			yield return StartCoroutine(MovePlayer(player, characterAnimator, mergingCard.transform));
+			yield return StartCoroutine(MergeCard(mergingCard, characterAnimator, playerData));
+			yield return StartCoroutine(EndMerging(targetPosition, player));
 			isPlaying = false;
 		}
 
-		IEnumerator Move(GameObject character, Animator characterAnimator, Transform targetCard) 
+		IEnumerator MovePlayer(GameObject player, Animator characterAnimator, Transform targetCard) 
 		{
-			SetVisibleOfValues(character, false);
+			SetVisibleOfValues(player, false);
 			characterAnimator.SetTrigger("walk");
-			character.transform.DOLocalMove(
-				new Vector3(targetCard.localPosition.x, targetCard.localPosition.y, character.transform.localPosition.z), 0.4f
+			player.transform.DOLocalMove(
+				new Vector2(targetCard.localPosition.x, targetCard.localPosition.y), 0.4f
 			).SetEase(Ease.OutSine);
 			yield return new WaitForSeconds(0.4f);
 		}
 
-		IEnumerator Merge(GameObject targetCard, Animator characterAnimator, PlayerData playerData)
+		IEnumerator MergeCard(GameObject targetCard, Animator characterAnimator, PlayerData playerData)
 		{
 			switch(targetCard.name) {
 				case "Monster": characterAnimator.SetTrigger("attack"); break;
@@ -79,8 +98,9 @@ namespace com.Gemfile.Merger
 			yield return new WaitForSeconds(0.4f);
 		}
 
-		IEnumerator End(GameObject targetCard) 
+		IEnumerator EndMerging(Position targetPosition, GameObject player) 
 		{
+			fields[targetPosition.index] = player;
 //			CopyValues(player, targetCard);
 //			player.gameObject.SetActive(false);
 //			Destroy(player);
@@ -151,7 +171,7 @@ namespace com.Gemfile.Merger
 			);
 		}
 
-		IEnumerator StartTakingCapture(GameObject player, GameObject targetCard) 
+		IEnumerator TakeCapture(GameObject player, GameObject targetCard) 
 		{
 			yield return new WaitForEndOfFrame();
 

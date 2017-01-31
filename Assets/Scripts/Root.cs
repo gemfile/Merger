@@ -17,7 +17,6 @@ namespace com.Gemfile.Merger
 			Debug.logger.logEnabled=false;
 #endif
 			gameMain = new GameMain();
-			Debug.Log("hoi" + swipe);
 		}
 
 		// Use this for initialization
@@ -62,6 +61,10 @@ namespace com.Gemfile.Merger
 			gameMain.fieldMergingEvent.AddListener((position, playerData) => {
 				Debug.Log($"fieldMerging: {position.row}, {position.col}");
 				gameView.MergeField(position, playerData);
+			});
+			gameMain.fieldMovingEvent.AddListener((targetPosition, cardPosition) => {
+				Debug.Log($"fieldMoving: {cardPosition.row}, {cardPosition.col} to {targetPosition.row}, {targetPosition.col}");
+				gameView.MoveField(targetPosition, cardPosition);
 			});
 			gameMain.Prepare();
 		}
