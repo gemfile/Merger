@@ -5,5 +5,15 @@
 		public Monster (CardData cardData): base(cardData) 
 		{
 		}
-    }
+
+		public PlayerData Merge(Player player) 
+		{
+			return player.Merge(this);
+		}
+
+		internal bool CantMerge(ICard target)
+        {
+			return !(target is Player);
+        }
+	}
 }

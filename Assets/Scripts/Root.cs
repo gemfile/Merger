@@ -66,9 +66,9 @@ namespace com.Gemfile.Merger
 				}
 				gameView.SetField();
 			});
-			gameMain.fieldMergingEvent.AddListener((position, playerData) => {
-				Debug.Log($"fieldMerging: {position.row}, {position.col}");
-				gameView.MergeField(position, playerData);
+			gameMain.fieldMergingEvent.AddListener(mergingInfo => {
+				Debug.Log($"fieldMerging: {mergingInfo.sourcePosition.row}, {mergingInfo.sourcePosition.col} -> {mergingInfo.targetPosition.row}, {mergingInfo.targetPosition.col}");
+				gameView.MergeField(mergingInfo);
 			});
 			gameMain.fieldMovingEvent.AddListener((targetPosition, cardPosition) => {
 				Debug.Log($"fieldMoving: {cardPosition.row}, {cardPosition.col} to {targetPosition.row}, {targetPosition.col}");

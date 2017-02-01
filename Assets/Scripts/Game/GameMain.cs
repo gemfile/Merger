@@ -8,7 +8,7 @@ namespace com.Gemfile.Merger
 {
 	internal class FieldAddingEvent: UnityEvent<Position, CardData, Position> {}
 	internal class FieldAddingCompleteEvent: UnityEvent {}
-	internal class FieldMergingEvent: UnityEvent<Position, PlayerData> {}
+	internal class FieldMergingEvent: UnityEvent<MergingInfo> {}
 	internal class FieldMovingEvent: UnityEvent<Position, Position> {}
 	internal class FieldPreparingEvent: UnityEvent<int> {}
 
@@ -24,6 +24,25 @@ namespace com.Gemfile.Merger
 			row = index / GameMain.cols;
 			col = index % GameMain.cols;
 		}
+
+		internal Position(int pivotIndex, int colOffset, int rowOffset)
+		{
+			row = (pivotIndex / GameMain.cols) + rowOffset;
+			col = (pivotIndex % GameMain.cols) + colOffset;
+			index = row * GameMain.cols + col;
+		}
+
+		internal bool IsAcceptableIndex() {
+			return col >= 0 && col < GameMain.cols && row >= 0 && row < GameMain.rows;
+		}
+	}
+
+	internal class MergingInfo
+	{
+		internal Position sourcePosition;
+		internal Position targetPosition;
+		internal PlayerData playerData;
+		internal Position mergingPosition;
 	}
 
 	public class CardData 
@@ -210,12 +229,10 @@ namespace com.Gemfile.Merger
 				};
 
 				var canMerge = mergingCoordinates.Aggregate(false, (result, mergingCoordinate) => {
-					bool isMovable = IsMovable(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
-
-					if(isMovable) {
-						var mergingindex = GetCardIndex(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
-						ICard card = GetCard(mergingindex);
-						result = result || (card != null && !CantMerge(card));
+					var nearbyPosition = new Position(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
+					if(nearbyPosition.IsAcceptableIndex()) {
+						ICard nearbyCard = GetCard(nearbyPosition.index);
+						result = ( result || (nearbyCard != null && !player.CantMerge(nearbyCard)) );
 					}
 
 					return result;
@@ -299,45 +316,60 @@ namespace com.Gemfile.Merger
 		internal void Merge(int colOffset, int rowOffset)
 		{
 			var playerIndex = GetIndex(player);
-//			while (IsMovable(playerIndex, colOffset, rowOffset)) 
-// 			{
-//				colOffset = colOffset + colOffset;
-//				rowOffset = rowOffset + rowOffset;
-//			}
+			var playerPosition = new Position(playerIndex);
+			var infrontofPlayer = new Position(playerIndex, colOffset, rowOffset);
+			var inbackofPlayer = new Position(playerIndex, -colOffset, -rowOffset);
+			var frontCard = GetCard(infrontofPlayer.index);
+			var backCard = GetCard(inbackofPlayer.index);
 
-			if (IsMovable(playerIndex, colOffset, rowOffset))
+			if (infrontofPlayer.IsAcceptableIndex() && frontCard != null && !player.CantMerge(frontCard))
 			{
-				var mergingIndex = GetCardIndex(playerIndex, colOffset, rowOffset);
-				ICard card = GetCard(mergingIndex);
-				if (card != null && !CantMerge(card))
-				{
-					PlayerData playerData = player.Merge(card);
-					fields[mergingIndex] = player;
+					PlayerData playerData = player.Merge(frontCard);
+					fields[infrontofPlayer.index] = player;
 					fields[playerIndex] = new Empty();
 					fieldMergingEvent.Invoke(
-						new Position(mergingIndex),
-						playerData
+						new MergingInfo() {
+							sourcePosition = playerPosition,
+							targetPosition = infrontofPlayer,
+							playerData = playerData,
+							mergingPosition = infrontofPlayer
+						}
 					);
 					Move(playerIndex, colOffset, rowOffset);
-				}
+			}
+			else if (inbackofPlayer.IsAcceptableIndex() && backCard != null && backCard is Monster)
+			{
+				PlayerData playerData = player.Merge(backCard);
+				fields[inbackofPlayer.index] = new Empty();
+				fieldMergingEvent.Invoke(
+					new MergingInfo() {
+						sourcePosition = inbackofPlayer,
+						targetPosition = playerPosition,
+						playerData = playerData,
+						mergingPosition = inbackofPlayer
+					}
+				);
+				Move(inbackofPlayer.index, colOffset, rowOffset);
 			}
 		}
 
-		void Move(int targetIndex, int colOffset, int rowOffset)
+		void Move(int pivotIndex, int colOffset, int rowOffset)
 		{
-			if (IsMovable(targetIndex, -colOffset, -rowOffset))
+			var inbackofPivot = new Position(pivotIndex, -colOffset, -rowOffset);
+			Debug.Log($"Move to : {pivotIndex}, {colOffset}, {rowOffset}");
+			Debug.Log($"inbackofPosition : {inbackofPivot.row}, {inbackofPivot.col}");
+			if (inbackofPivot.IsAcceptableIndex())
 			{
-				var cardIndex = GetCardIndex(targetIndex, -colOffset, -rowOffset);
-				ICard card = GetCard(cardIndex);
-				if (card != null)
+				ICard backCard = GetCard(inbackofPivot.index);
+				if (backCard != null)
 				{
-					fields[targetIndex] = card;
-					fields[cardIndex] = new Empty();
+					fields[pivotIndex] = backCard;
+					fields[inbackofPivot.index] = new Empty();
 					fieldMovingEvent.Invoke(
-						new Position(targetIndex),
-						new Position(cardIndex)
+						new Position(pivotIndex),
+						inbackofPivot
 					);
-					Move(cardIndex, colOffset, rowOffset);
+					Move(inbackofPivot.index, colOffset, rowOffset);
 				}
 			}
 			else
@@ -369,14 +401,6 @@ namespace com.Gemfile.Merger
 			{
 				return null;
 			}
-		}
-
-		bool CantMerge(ICard target)
-		{
-			return (
-				target is Empty ||
-				(target is Monster && player.Atk <= 0)
-			);
 		}
 
 		internal bool IsOver

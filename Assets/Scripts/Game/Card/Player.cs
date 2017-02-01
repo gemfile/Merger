@@ -15,12 +15,11 @@ namespace com.Gemfile.Merger
 		{
 			get { return hp; }
 		}
-
 		public int Atk
 		{
 			get { return atk; }
 		}
-
+		
 		public Player(CardData cardData): base(cardData) 
 		{
 			hp = cardData.value;
@@ -71,6 +70,14 @@ namespace com.Gemfile.Merger
 			Debug.Log("===============");
 			return new PlayerData { hp = hp, coin = coin, atk = atk, def = def };
 		}
-	}
+
+        internal bool CantMerge(ICard target)
+        {
+            return (
+				target is Empty ||
+				(target is Monster && atk <= 0)
+			);
+        }
+    }
 }
 
