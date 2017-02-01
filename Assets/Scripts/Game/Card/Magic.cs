@@ -5,5 +5,5 @@
 		public Magic (CardData cardData): base(cardData) 
 		{
 		}
-    }
+	}
 }

@@ -6,18 +6,19 @@ using System.Linq;
 
 namespace com.Gemfile.Merger 
 {
-	public class FieldAddingEvent: UnityEvent<Position, CardData> {}
-	public class FieldMergingEvent: UnityEvent<Position, PlayerData> {}
-	public class FieldMovingEvent: UnityEvent<Position, Position> {}
-	public class FieldPreparingEvent: UnityEvent<int> {}
+	internal class FieldAddingEvent: UnityEvent<Position, CardData, Position> {}
+	internal class FieldAddingCompleteEvent: UnityEvent {}
+	internal class FieldMergingEvent: UnityEvent<Position, PlayerData> {}
+	internal class FieldMovingEvent: UnityEvent<Position, Position> {}
+	internal class FieldPreparingEvent: UnityEvent<int> {}
 
-	public class Position
+	internal class Position
 	{
-		public int index;
-		public int row;
-		public int col;
+		internal int index;
+		internal int row;
+		internal int col;
 
-		public Position(int index) 
+		internal Position(int index) 
 		{
 			this.index = index;
 			row = index / GameMain.cols;
@@ -41,12 +42,12 @@ namespace com.Gemfile.Merger
 		public int coin;
 	}
 
-	public class Empty: CardBase 
+	class Empty: CardBase 
 	{
 		public Empty(): base(null) {}
 	}
 
-	public enum PhaseOfGame
+	enum PhaseOfGame
 	{
 		FILL = 0,
 		PLAY
@@ -54,14 +55,15 @@ namespace com.Gemfile.Merger
 
 	public class GameMain 
 	{
-		public static readonly int cols = 3;
-		public static readonly int rows = 3;
+		internal static readonly int cols = 3;
+		internal static readonly int rows = 3;
 		readonly int countOfFields;
 
-		public FieldPreparingEvent fieldPreparingEvent;
-		public FieldAddingEvent fieldAddingEvent;
-		public FieldMergingEvent fieldMergingEvent;
-		public FieldMovingEvent fieldMovingEvent;
+		internal FieldPreparingEvent fieldPreparingEvent;
+		internal FieldAddingEvent fieldAddingEvent;
+		internal FieldAddingCompleteEvent fieldAddingCompleteEvent;
+		internal FieldMergingEvent fieldMergingEvent;
+		internal FieldMovingEvent fieldMovingEvent;
 
 		readonly Dictionary<int, ICard> fields;
 		Queue<ICard> deckQueue;
@@ -71,10 +73,11 @@ namespace com.Gemfile.Merger
 		List<PhaseOfGame> phaseOfGame;
 		int currentIndexOfPhase;
 
-		public GameMain() 
+		internal GameMain() 
 		{
 			fields = new Dictionary<int, ICard>();
 			fieldAddingEvent = new FieldAddingEvent();
+			fieldAddingCompleteEvent = new FieldAddingCompleteEvent();
 			fieldMergingEvent = new FieldMergingEvent();
 			fieldPreparingEvent = new FieldPreparingEvent();
 			fieldMovingEvent = new FieldMovingEvent();
@@ -84,7 +87,7 @@ namespace com.Gemfile.Merger
 			monsterQueue = new Queue<Monster>();
 		}
 
-		public void Prepare() 
+		internal void Prepare()
 		{
 			PrepareADeck(MakeCardDatas());
 			SetFields();
@@ -103,7 +106,7 @@ namespace com.Gemfile.Merger
 			AddAField(1, player);
 		}
 
-		void PrepareADeck(List<ICard> deckList) 
+		void PrepareADeck(List<ICard> deckList)
 		{
 			deckQueue = new Queue<ICard>(deckList.Shuffle());
 			deckList.Clear();
@@ -190,7 +193,7 @@ namespace com.Gemfile.Merger
 			return deckList;
 		}
 
-		public void Update()
+		internal void Update()
 		{
 			var previousPhase = GetPreviousPhase();
 			var currentPhase = GetCurrentPhase();
@@ -228,12 +231,16 @@ namespace com.Gemfile.Merger
 			if (currentPhase == PhaseOfGame.FILL && fields.Values.Any(field => field is Empty))
 			{
 				var emptyFields = fields.Where(field => field.Value is Empty).ToDictionary(p => p.Key, p => p.Value);
-				emptyFields.ForEach(emptyField => AddAField(emptyField.Key, deckQueue.Dequeue()));
+				emptyFields.ForEach(emptyField => {
+					AddAField(emptyField.Key, deckQueue.Dequeue());
+				});
 
 				Debug.Log("=== Choose the card ===");
 				int count = 0;
 				fields.ForEach(icard => Debug.Log(icard.Value.GetType() + ", " + icard.Value.GetValue() + ", " + count++));
 				Debug.Log("===============");
+
+				fieldAddingCompleteEvent.Invoke();
 				SetNextPhase();
 			}
 		}
@@ -274,7 +281,8 @@ namespace com.Gemfile.Merger
 					value = card.GetValue(),
 					resourceName = card.GetResourceName(),
 					cardName = card.GetCardName()
-				}
+				},
+				new Position(GetIndex(player))
 			);
 		}
 
@@ -283,12 +291,12 @@ namespace com.Gemfile.Merger
 			return fields.FirstOrDefault(field => field.Value == card).Key;
 		}
 
-		public bool IsNearFromPlayer(int index)
+		internal bool IsNearFromPlayer(int index)
 		{
 			return (Mathf.Abs(index - GetIndex(player)) == 1);
 		}
 
-		public void Merge(int colOffset, int rowOffset)
+		internal void Merge(int colOffset, int rowOffset)
 		{
 			var playerIndex = GetIndex(player);
 //			while (IsMovable(playerIndex, colOffset, rowOffset)) 
@@ -371,7 +379,7 @@ namespace com.Gemfile.Merger
 			);
 		}
 
-		public bool IsOver
+		internal bool IsOver
 		{
 			get { return player.Hp <= 0; }
 		}

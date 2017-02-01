@@ -51,12 +51,20 @@ namespace com.Gemfile.Merger
 			});
 		}
 
-		void PrepareAGame() 
+		bool initOnce = true;
+		void PrepareAGame()
 		{
 			gameMain.fieldPreparingEvent.AddListener(gameView.PrepareField);
-			gameMain.fieldAddingEvent.AddListener((position, cardData) => {
+			gameMain.fieldAddingEvent.AddListener((position, cardData, playerPosition) => {
 				Debug.Log($"fieldAdding: {position.row}, {position.col}, {cardData.type}, {cardData.value}, {cardData.resourceName}, {cardData.cardName}");
-				gameView.MakeField(position, cardData);
+				gameView.MakeField(position, cardData, playerPosition);
+			});
+			gameMain.fieldAddingCompleteEvent.AddListener(() => {
+				if (initOnce) {
+					initOnce = false;
+					gameView.Init();
+				}
+				gameView.SetField();
 			});
 			gameMain.fieldMergingEvent.AddListener((position, playerData) => {
 				Debug.Log($"fieldMerging: {position.row}, {position.col}");

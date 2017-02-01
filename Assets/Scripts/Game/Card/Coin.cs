@@ -5,5 +5,5 @@
 		public Coin (CardData cardData): base(cardData) 
 		{
 		}
-    }
+	}
 }
