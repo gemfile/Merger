@@ -8,12 +8,7 @@
 
 		public PlayerData Merge(Player player) 
 		{
-			return player.Merge(this);
+			return player.Merge(this, false);
 		}
-
-		internal bool CantMerge(ICard target)
-        {
-			return !(target is Player);
-        }
 	}
 }

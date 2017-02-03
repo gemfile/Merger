@@ -3,10 +3,11 @@ using UnityEngine;
 using System.Collections;
 using DG.Tweening;
 using System.Linq;
+using System;
 
 namespace com.Gemfile.Merger
 {
-	class FieldNewAdded
+    class FieldNewAdded
 	{
 		internal GameObject card;
 		internal Vector2 createdFrom;
@@ -23,21 +24,27 @@ namespace com.Gemfile.Merger
 		Bounds sizeOfCard;
 
 		GameObject field;
+		GameObject background;
 
 		internal void Prepare() 
 		{
 			deckNames = new string[] { "Deck" };
 			isPlaying = false;
+
 			fields = new Dictionary<int, GameObject>();
 			fieldsNewAdded = new List<FieldNewAdded>();
+
 			field = new GameObject();
 			field.transform.SetParent(transform);
 			field.name = "Field";
+
+			background = transform.Find("Background").gameObject;
 		}
 
 		internal void Init()
 		{
 			Align();
+			FillBackground();
 		}
 
 		internal void PrepareField(int countOfFields)
@@ -104,7 +111,7 @@ namespace com.Gemfile.Merger
 			yield return StartCoroutine(TakeCapture(player, mergingCard));
 			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceAnimator, sourceRenderer, targetRenderer));
 			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerData, sourceAnimator));
-			yield return StartCoroutine(EndMerging(mergingInfo.targetPosition, player));
+			yield return StartCoroutine(EndMerging(mergingInfo.targetPosition, player, playerData));
 		}
 
         IEnumerator MoveCard(
@@ -151,41 +158,47 @@ namespace com.Gemfile.Merger
 			mergingCard.SetActive(false);
 			Destroy(mergingCard);
 
-			// yield return new WaitForSeconds(0.4f);
+			yield return new WaitForSeconds(0.4f);
 		}
 
-		IEnumerator EndMerging(Position targetPosition, GameObject player) 
+		IEnumerator EndMerging(Position targetPosition, GameObject player, PlayerData playerData) 
 		{
 			fields[targetPosition.index] = player;
+			if(playerData.hp <= 0) 
+			{
+				CallAnimation(player, "death");
+				// player
+			}
 
-			yield return null;
+			yield return new WaitForSeconds(1f);
 		}
 
-		void CopyValues(GameObject source, GameObject target) 
+		void CallAnimation(GameObject targetCard, string name)
 		{
-			target.name = source.name;
-
-			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text = 
-				source.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().text;	
-			
-			target.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text = 
-				source.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().text;
+			var sourceCharacter = targetCard.transform.GetChild(1);
+			var sourceAnimator = sourceCharacter.GetComponent<Animator>();
+			sourceAnimator.SetTrigger(name);
 		}
 
-		void SetValue(GameObject target, string key, string value)
+		void SetValue(GameObject targetCard, string key, string value)
 		{
-			target.transform.GetChild(0).Find(key).GetComponent<TextMesh>().text = value;
+			targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>().text = value;
 		}
 
-		void SetVisibleOfValues(GameObject target, bool visible) 
+		void SetVisibleOfValues(GameObject targetCard, bool visible) 
 		{
-			target.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().gameObject.SetActive(visible);
-			target.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().gameObject.SetActive(visible);
+			targetCard.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().gameObject.SetActive(visible);
+			targetCard.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().gameObject.SetActive(visible);
 		}
 
-		void SetVisibleOfResource(GameObject target, bool visible)
+		void SetVisibleOfResource(GameObject targetCard, bool visible)
 		{
-			target.transform.GetChild(1).gameObject.SetActive(visible);
+			targetCard.transform.GetChild(1).gameObject.SetActive(visible);
+		}
+
+		void SetVisibleOfMask(GameObject targetCard, bool visible)
+		{
+			targetCard.transform.GetChild(0).Find("Mask").gameObject.SetActive(visible);
 		}
 
 		internal bool IsPlaying()
@@ -204,6 +217,7 @@ namespace com.Gemfile.Merger
 			sizeOfCard = card.GetBounds();
 			SetValue(card, "Name", cardData.cardName);
 			SetValue(card, "Value", cardData.value.ToString());
+			SetVisibleOfMask(card, false);
 
 			var cardResource = ResourceCache.Instantiate(cardData.resourceName, transform);
 			cardResource.transform.SetParent(card.transform);
@@ -227,7 +241,7 @@ namespace com.Gemfile.Merger
 				var card = fieldNewAdded.card;
 				var createdFrom = fieldNewAdded.createdFrom;
 				Vector3 localPosition = card.transform.localPosition;
-				Vector3 creatingOffset = createdFrom * 0.28f;
+				Vector3 creatingOffset = createdFrom * 0.21f;
 				Debug.Log("hoi : " + creatingOffset);
 			
 				var duration = .8f;
@@ -240,6 +254,7 @@ namespace com.Gemfile.Merger
 						.SetLoops(2, LoopType.Yoyo)
 						.SetEase(Ease.InOutCubic)
 						.OnStepComplete(()=>{
+							SetVisibleOfMask(card, true);
 							SetVisibleOfValues(card, true);
 							SetVisibleOfResource(card, true);
 						})
@@ -256,6 +271,88 @@ namespace com.Gemfile.Merger
 				(sizeOfCard.size.y - sizeOfField.size.y) / 2, 
 				field.transform.localPosition.z
 			);
+		}
+
+		void FillBackground()
+		{
+			StartCoroutine(StartFillBackground());
+		}
+
+		IEnumerator StartFillBackground()
+		{
+			yield return null;
+
+			var ceilings = new GameObject("Ceilings");
+			ceilings.transform.SetParent(background.transform);
+			ceilings.transform.SetAsFirstSibling();
+
+			var sampleCeiling = ResourceCache.Instantiate("Ceilings");
+			var sizeOfCeiling = sampleCeiling.GetBounds();
+			var sizeOfBackground = background.GetBounds();
+			Destroy(sampleCeiling);
+
+			var startVectorOfRight = new Vector2(
+				sizeOfBackground.max.x + sizeOfCeiling.extents.x,
+				sizeOfBackground.max.y - sizeOfCeiling.extents.y
+			);
+			var startVectorOfLeft = new Vector2(
+				sizeOfBackground.min.x - sizeOfCeiling.extents.x,
+				sizeOfBackground.max.y - sizeOfCeiling.extents.y
+			);
+
+			Debug.Log("hoi :" + sizeOfBackground.min.x + ", " + sizeOfCeiling.extents.x + ", " + (sizeOfBackground.min.x - sizeOfCeiling.extents.x));
+
+			var screenSize = Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
+
+			yield return StartFillEmptyArea(
+				ceilings, 
+				new Vector2(sizeOfCeiling.size.x, -sizeOfCeiling.size.y),
+				startVectorOfRight, 
+				new Vector2(startVectorOfRight.x, -screenSize.y),
+				new Vector2(screenSize.x, screenSize.y)
+			);
+			yield return StartFillEmptyArea(
+				ceilings,
+				new Vector2(-sizeOfCeiling.size.x, -sizeOfCeiling.size.y),
+				startVectorOfLeft,
+				new Vector2(-screenSize.x, -screenSize.y),
+				new Vector2(-startVectorOfLeft.x, screenSize.y)
+			);
+		}
+
+		IEnumerator StartFillEmptyArea(
+			GameObject ceilings, 
+			Vector2 offsetOfCeiling, 
+			Vector2 startVector, 
+			Vector2 minBoundary,
+			Vector2 maxBoundary
+		) {
+			int row = 0;
+			int col = 0; 
+			while(true)
+			{
+				var ceiling = ResourceCache.Instantiate("Ceilings");
+				ceiling.transform.SetParent(ceilings.transform);
+
+				var currentPosition = new Vector2(
+					startVector.x + col * offsetOfCeiling.x, 
+					startVector.y + row * offsetOfCeiling.y
+				);
+				ceiling.transform.localPosition = currentPosition;
+
+				col++;
+				if(currentPosition.x < minBoundary.x || currentPosition.x > maxBoundary.x)
+				{
+					if(currentPosition.y < minBoundary.y || currentPosition.y > maxBoundary.y)
+					{
+						yield break;
+					}
+					col = 0;
+					row++;
+				}
+
+				yield return null;
+			}
 		}
 
 		IEnumerator TakeCapture(GameObject player, GameObject targetCard)
@@ -293,5 +390,10 @@ namespace com.Gemfile.Merger
 			capturedCard.transform.SetParent(player.transform);
 			capturedCard.transform.localPosition = new Vector3(0, 0, 0);
 		}
-	}
+
+        internal Bounds GetBackgroundSize()
+        {
+            return background.GetBounds();
+        }
+    }
 }

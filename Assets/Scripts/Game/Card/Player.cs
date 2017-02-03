@@ -29,7 +29,7 @@ namespace com.Gemfile.Merger
 			coin = 0;
 		}
 
-		public PlayerData Merge(ICard card) 
+		public PlayerData Merge(ICard card, bool useWeapon = true) 
 		{
 			Debug.Log("=== Merging ===");
 			switch (card.GetType().Name) 
@@ -44,15 +44,15 @@ namespace com.Gemfile.Merger
 
 				case "Monster":
 					int monsterValue = card.GetValue();
-					monsterValue = Math.Max(0, monsterValue - atk);
-					atk = 0;
-
+					if (useWeapon) {
+						monsterValue = Math.Max(0, monsterValue - atk);
+						atk = 0;
+					}
 					if (monsterValue > 0) {
 						int initialDef = def;
 						def = Math.Max(0, def - monsterValue);
 						monsterValue -= initialDef;
 					}
-
 					if (monsterValue > 0) {
 						hp -= monsterValue;
 					}

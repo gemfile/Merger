@@ -8,7 +8,8 @@ namespace com.Gemfile.Merger
 		readonly GameMain gameMain;
 		[SerializeField]
 		GameView gameView;
-		GameUi gameUi;
+		[SerializeField]
+		GameUI gameUi;
 		Swipe swipe;
 
 		Root() 
@@ -30,7 +31,7 @@ namespace com.Gemfile.Merger
 			AlignGameViewAtTop();
 		}
 
-		void AlignGameViewAtTop() 
+		void AlignGameViewAtTop()
 		{
 			var sizeOfScreen = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height));
 			var sizeOfGameView = gameView.gameObject.GetBounds();
@@ -80,6 +81,7 @@ namespace com.Gemfile.Merger
 		void PrepareAView()
 		{
 			gameView.Prepare();
+			gameUi.Prepare();
 		}
 
 		IEnumerator StartTheGame() 

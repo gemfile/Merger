@@ -320,26 +320,26 @@ namespace com.Gemfile.Merger
 			var infrontofPlayer = new Position(playerIndex, colOffset, rowOffset);
 			var inbackofPlayer = new Position(playerIndex, -colOffset, -rowOffset);
 			var frontCard = GetCard(infrontofPlayer.index);
-			var backCard = GetCard(inbackofPlayer.index);
+			var backCard = GetCard(inbackofPlayer.index) as Monster;
 
 			if (infrontofPlayer.IsAcceptableIndex() && frontCard != null && !player.CantMerge(frontCard))
 			{
-					PlayerData playerData = player.Merge(frontCard);
-					fields[infrontofPlayer.index] = player;
-					fields[playerIndex] = new Empty();
-					fieldMergingEvent.Invoke(
-						new MergingInfo() {
-							sourcePosition = playerPosition,
-							targetPosition = infrontofPlayer,
-							playerData = playerData,
-							mergingPosition = infrontofPlayer
-						}
-					);
-					Move(playerIndex, colOffset, rowOffset);
+				PlayerData playerData = player.Merge(frontCard);
+				fields[infrontofPlayer.index] = player;
+				fields[playerIndex] = new Empty();
+				fieldMergingEvent.Invoke(
+					new MergingInfo() {
+						sourcePosition = playerPosition,
+						targetPosition = infrontofPlayer,
+						playerData = playerData,
+						mergingPosition = infrontofPlayer
+					}
+				);
+				Move(playerIndex, colOffset, rowOffset);
 			}
-			else if (inbackofPlayer.IsAcceptableIndex() && backCard != null && backCard is Monster)
+			else if (inbackofPlayer.IsAcceptableIndex() && backCard != null)
 			{
-				PlayerData playerData = player.Merge(backCard);
+				PlayerData playerData = backCard.Merge(player);
 				fields[inbackofPlayer.index] = new Empty();
 				fieldMergingEvent.Invoke(
 					new MergingInfo() {
