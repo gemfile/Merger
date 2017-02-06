@@ -3,10 +3,12 @@ using UnityEngine;
 using System.Collections;
 using DG.Tweening;
 using System.Linq;
-using System;
+using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
+	internal class SpriteCapturedEvent: UnityEvent<Sprite> {}
+
     class FieldNewAdded
 	{
 		internal GameObject card;
@@ -26,6 +28,7 @@ namespace com.Gemfile.Merger
 		GameObject background;
 
 		CoroutineQueue coroutineQueue;
+		internal SpriteCapturedEvent spriteCapturedEvent;
 
 		internal void Prepare() 
 		{
@@ -40,10 +43,13 @@ namespace com.Gemfile.Merger
 
 			background = transform.Find("Background").gameObject;
 			coroutineQueue = new CoroutineQueue(3, StartCoroutine);
+			
+			spriteCapturedEvent = new SpriteCapturedEvent();
 		}
 
 		internal void Init()
 		{
+			Hide();
 			Align();
 			FillBackground();
 
@@ -76,7 +82,6 @@ namespace com.Gemfile.Merger
 		IEnumerator StartSetting()
 		{
 			yield return null;
-			Hide();
 			ShowCards();
 		}
 
@@ -388,13 +393,7 @@ namespace com.Gemfile.Merger
 				Screen.height / Camera.main.orthographicSize / 2
 			);
 
-			var capturedCard = new GameObject();
-			var spriteRenderer = capturedCard.AddComponent<SpriteRenderer>();
-			spriteRenderer.sprite = capturedSprite;
-			spriteRenderer.sortingOrder = -player.transform.childCount;
-			capturedCard.name = targetCard.name;
-			capturedCard.transform.SetParent(player.transform);
-			capturedCard.transform.localPosition = new Vector3(0, 0, 0);
+			spriteCapturedEvent.Invoke(capturedSprite);
 		}
 
         internal Bounds GetBackgroundSize()

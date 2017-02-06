@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,8 @@ namespace com.Gemfile.Merger
     {
 		[SerializeField]
 		private GameView gameView;
+        [SerializeField]
+        private RectTransform handContainer;
     
         internal void Prepare()
         {
@@ -21,6 +24,13 @@ namespace com.Gemfile.Merger
 			var backgroundSize = Camera.main.WorldToScreenPoint(new Vector2(backgroundBounds.size.x, backgroundBounds.size.y));
             transform.GetChild(0).Find("EmptyArea").GetComponent<LayoutElement>().minHeight = backgroundSize.y/2;
             transform.GetChild(0).Find("Bottom").GetChild(0).GetComponent<LayoutElement>().preferredWidth = backgroundSize.x;
+        }
+
+        internal void AddCardAcquired(Sprite sprite)
+        {
+            var uiCardMask = ResourceCache.Instantiate("UICardMask");
+            uiCardMask.transform.SetParent(handContainer, false);
+            uiCardMask.transform.Find("UICard").GetComponent<Image>().sprite = sprite;
         }
     }
 }
