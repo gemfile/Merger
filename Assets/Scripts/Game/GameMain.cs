@@ -232,7 +232,7 @@ namespace com.Gemfile.Merger
 					var nearbyPosition = new Position(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
 					if(nearbyPosition.IsAcceptableIndex()) {
 						ICard nearbyCard = GetCard(nearbyPosition.index);
-						result = ( result || (nearbyCard != null && !player.CantMerge(nearbyCard)) );
+						result = ( result || (nearbyCard != null && !player.CantMerge(nearbyCard)) || nearbyCard is Monster );
 					}
 
 					return result;
@@ -308,11 +308,6 @@ namespace com.Gemfile.Merger
 			return fields.FirstOrDefault(field => field.Value == card).Key;
 		}
 
-		internal bool IsNearFromPlayer(int index)
-		{
-			return (Mathf.Abs(index - GetIndex(player)) == 1);
-		}
-
 		internal void Merge(int colOffset, int rowOffset)
 		{
 			var playerIndex = GetIndex(player);
@@ -320,7 +315,7 @@ namespace com.Gemfile.Merger
 			var infrontofPlayer = new Position(playerIndex, colOffset, rowOffset);
 			var inbackofPlayer = new Position(playerIndex, -colOffset, -rowOffset);
 			var frontCard = GetCard(infrontofPlayer.index);
-			var backCard = GetCard(inbackofPlayer.index) as Monster;
+			var backCardMonster = GetCard(inbackofPlayer.index) as Monster;
 
 			if (infrontofPlayer.IsAcceptableIndex() && frontCard != null && !player.CantMerge(frontCard))
 			{
@@ -337,9 +332,9 @@ namespace com.Gemfile.Merger
 				);
 				Move(playerIndex, colOffset, rowOffset);
 			}
-			else if (inbackofPlayer.IsAcceptableIndex() && backCard != null)
+			else if (inbackofPlayer.IsAcceptableIndex() && backCardMonster != null)
 			{
-				PlayerData playerData = backCard.Merge(player);
+				PlayerData playerData = backCardMonster.Merge(player);
 				fields[inbackofPlayer.index] = new Empty();
 				fieldMergingEvent.Invoke(
 					new MergingInfo() {
@@ -378,19 +373,6 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		bool IsMovable(int pivot, int colOffset, int rowOffset)
-		{
-			var playerPosition = new Position(pivot);
-			int colNext = playerPosition.col + colOffset;
-			int rowNext = playerPosition.row + rowOffset;
-			return colNext >= 0 && colNext < cols && rowNext >= 0 && rowNext < rows;
-		}
-
-		int GetCardIndex(int pivot, int colOffset, int rowOffset)
-		{
-			return pivot + (colOffset + rowOffset * cols);
-		}
-
 		ICard GetCard(int index)
 		{
 			if (index >= 0 && index < fields.Count)
@@ -403,7 +385,7 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		internal bool IsOver
+		internal bool IsGameOver
 		{
 			get { return player.Hp <= 0; }
 		}

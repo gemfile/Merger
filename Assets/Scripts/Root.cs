@@ -43,11 +43,13 @@ namespace com.Gemfile.Merger
 		{
 			swipe = gameObject.AddComponent<Swipe>();
 			swipe.swipeEvent.AddListener(swipeInfo => {
-				switch(swipeInfo.direction) {
-					case Direction.Right: gameMain.Merge(1, 0); break;
-					case Direction.Left: gameMain.Merge(-1, 0); break;
-					case Direction.Up: gameMain.Merge(0, 1); break;
-					case Direction.Down: gameMain.Merge(0, -1); break;
+				if(!gameView.IsPlaying()) {
+					switch(swipeInfo.direction) {
+						case Direction.Right: gameMain.Merge(1, 0); break;
+						case Direction.Left: gameMain.Merge(-1, 0); break;
+						case Direction.Up: gameMain.Merge(0, 1); break;
+						case Direction.Down: gameMain.Merge(0, -1); break;
+					}
 				}
 			});
 		}
@@ -88,11 +90,9 @@ namespace com.Gemfile.Merger
 		{
 			while (true) 
 			{
-				if (!gameView.IsPlaying()) {
-					gameMain.Update();
-				}
+				gameMain.Update();
 
-				if (gameMain.IsOver) {
+				if (gameMain.IsGameOver) {
 					Debug.Log("=== The game is over! ===");
 					yield break;
 				}

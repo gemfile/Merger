@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using System;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 
-namespace com.Gemfile.Merger 
+namespace com.Gemfile.Merger
 {
-	[System.Serializable]
+    [System.Serializable]
 	public class SwipeEvent: UnityEvent<SwipeInfo> {}
 
 	public class SwipeInfo 
@@ -24,7 +25,7 @@ namespace com.Gemfile.Merger
 		Right
 	};
 
-    public class Swipe : MonoBehaviour 
+    public class Swipe : MonoBehaviour
 	{
         public SwipeEvent swipeEvent;
     	
@@ -46,8 +47,9 @@ namespace com.Gemfile.Merger
 
         void TouchUpdate() 
 		{
+            bool isPointerOverGui = EventSystem.current.IsPointerOverGameObject();
 #if UNITY_IOS || UNITY_ANDROID
-            if (Input.touchCount > 0) 
+            if (Input.touchCount > 0 && !isPointerOverGui) 
 			{
                 if (Input.GetTouch(0).phase == TouchPhase.Began) 
 				{
@@ -64,7 +66,7 @@ namespace com.Gemfile.Merger
 #endif
 
 #if UNITY_EDITOR
-            if (Input.GetMouseButtonDown(0)) 
+            if (Input.GetMouseButtonDown(0) && !isPointerOverGui) 
 			{
                 timeBegin = Time.time;
                 touchBegin = Input.mousePosition;
@@ -76,7 +78,7 @@ namespace com.Gemfile.Merger
             }
 #endif
 
-            if (timeBegin > 0 && timeEnd > 0) 
+            if (timeBegin > 0 && timeEnd > 0 && !isPointerOverGui) 
 			{
                 float timeDelta = timeEnd - timeBegin;
 //                Debug.Log("timeDelta : " + timeDelta);
@@ -151,5 +153,6 @@ namespace com.Gemfile.Merger
                 });
             }
         }
+
     }
 }

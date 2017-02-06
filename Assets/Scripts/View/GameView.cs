@@ -19,17 +19,17 @@ namespace com.Gemfile.Merger
 		Dictionary<int, GameObject> fields;
 		List<FieldNewAdded> fieldsNewAdded;
 		GameObject player;
-		bool isPlaying;
 
 		Bounds sizeOfCard;
 
 		GameObject field;
 		GameObject background;
 
+		CoroutineQueue coroutineQueue;
+
 		internal void Prepare() 
 		{
 			deckNames = new string[] { "Deck" };
-			isPlaying = false;
 
 			fields = new Dictionary<int, GameObject>();
 			fieldsNewAdded = new List<FieldNewAdded>();
@@ -39,12 +39,18 @@ namespace com.Gemfile.Merger
 			field.name = "Field";
 
 			background = transform.Find("Background").gameObject;
+			coroutineQueue = new CoroutineQueue(3, StartCoroutine);
 		}
 
 		internal void Init()
 		{
 			Align();
 			FillBackground();
+
+			// Replace the easing vector when fields show up the first time.
+			fieldsNewAdded.ForEach(fieldNewAdded => {
+				fieldNewAdded.createdFrom = new Vector2(0, 1);
+			});
 		}
 
 		internal void PrepareField(int countOfFields)
@@ -54,12 +60,12 @@ namespace com.Gemfile.Merger
 
 		internal void MergeField(MergingInfo mergingInfo) 
 		{
-			StartCoroutine(StartMerging(mergingInfo));
+			coroutineQueue.Run(StartMerging(mergingInfo));
 		}
 
 		internal void MoveField(Position targetPosition, Position cardPosition)
 		{
-			StartCoroutine(StartMoving(targetPosition, cardPosition));
+			coroutineQueue.Run(StartMoving(targetPosition, cardPosition));
 		}
 
         internal void SetField()
@@ -76,9 +82,9 @@ namespace com.Gemfile.Merger
 
 		void Hide()
 		{
-			fieldsNewAdded.ForEach((FieldNewAdded) => {
-				SetVisibleOfValues(FieldNewAdded.card, false);
-				SetVisibleOfResource(FieldNewAdded.card, false);
+			fieldsNewAdded.ForEach((fieldNewAdded) => {
+				SetVisibleOfValues(fieldNewAdded.card, false);
+				SetVisibleOfResource(fieldNewAdded.card, false);
 			});
 		}
 
@@ -203,7 +209,7 @@ namespace com.Gemfile.Merger
 
 		internal bool IsPlaying()
 		{
-			return isPlaying;
+			return coroutineQueue.IsRunning();
 		}
 
 		internal void MakeField(Position position, CardData cardData, Position playerPosition) 
