@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
-	internal class SpriteCapturedEvent: UnityEvent<Sprite> {}
+	internal class SpriteCapturedEvent: UnityEvent<Sprite, ICard, List<ICard>> {}
 
     class FieldNewAdded
 	{
@@ -82,6 +82,7 @@ namespace com.Gemfile.Merger
 		IEnumerator StartSetting()
 		{
 			yield return null;
+			Hide();
 			ShowCards();
 		}
 
@@ -101,7 +102,7 @@ namespace com.Gemfile.Merger
 
 			movingCard.transform.DOLocalMove(
 				new Vector2(targetLocalPosition.x, targetLocalPosition.y), 0.4f
-			).SetEase(Ease.OutSine);
+			).SetEase(Ease.OutCubic);
 			fields[targetPosition.index] = movingCard;
 
 			yield return new WaitForSeconds(0.4f);
@@ -115,32 +116,35 @@ namespace com.Gemfile.Merger
 			var playerData = mergingInfo.playerData;
 
 			var sourceCharacter = sourceCard.transform.GetChild(1);
-			var sourceAnimator = sourceCharacter.GetComponent<Animator>();
-			var sourceRenderer = sourceCharacter.GetComponent<SpriteRenderer>();
-			var targetRenderer = targetCard.transform.GetChild(1).GetComponent<SpriteRenderer>();
+			var targetCharacter = targetCard.transform.GetChild(1);
 
-			yield return StartCoroutine(TakeCapture(player, mergingCard));
-			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceAnimator, sourceRenderer, targetRenderer));
-			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerData, sourceAnimator));
+			yield return StartCoroutine(TakeCapture(player, mergingCard, playerData));
+			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceCharacter, targetCharacter));
+			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerData, sourceCharacter, targetCharacter));
 			yield return StartCoroutine(EndMerging(mergingInfo.targetPosition, player, playerData));
 		}
 
         IEnumerator MoveCard(
 			GameObject sourceCard, 
 			GameObject targetCard, 
-			Animator sourceAnimator, 
-			SpriteRenderer sourceRenderer,
-			SpriteRenderer targetRenderer
+			Transform sourceCharacter,
+			Transform targetCharacter
 		) {
 			SetVisibleOfValues(sourceCard, false);
 			SetVisibleOfValues(targetCard, false);
-			sourceAnimator.SetTrigger("walk");	
-			sourceRenderer.sortingOrder = 1;
-			targetRenderer.sortingOrder = 0;
+			var x = (targetCard.transform.localPosition - sourceCard.transform.localPosition).normalized.x;
+			sourceCard.transform.localScale = new Vector3(
+				Mathf.Abs(x) == 1 ? x : sourceCard.transform.localScale.x,
+				1,
+				1
+			);
+			sourceCharacter.GetComponent<Animator>().SetTrigger("walk");
+			sourceCharacter.GetComponent<SpriteRenderer>().sortingOrder = 1;
+			targetCharacter.GetComponent<SpriteRenderer>().sortingOrder = 0;
 
 			sourceCard.transform.DOLocalMove(
 				new Vector2(targetCard.transform.localPosition.x, targetCard.transform.localPosition.y), 0.4f
-			).SetEase(Ease.OutSine);
+			).SetEase(Ease.OutCubic);
 
 			yield return new WaitForSeconds(0.4f);
 		}
@@ -150,18 +154,19 @@ namespace com.Gemfile.Merger
 			GameObject targetCard, 
 			GameObject mergingCard, 
 			PlayerData playerData,
-			Animator sourceAnimator
+			Transform sourceCharacter,
+			Transform targetCharacter
 		) {
-			switch(targetCard.name) 
-			{
-				case "Potion": 
-				case "Coin": 
-				case "Weapon": 
-				case "Magic": sourceAnimator.SetTrigger("jesture"); break;
-				default: sourceAnimator.SetTrigger("attack"); break;
-			}
-
+			SetTriggerByName(targetCard.name, sourceCharacter);
 			yield return new WaitForSeconds(1f);
+
+			if (targetCard.name == "Monster")
+			{
+				sourceCharacter.GetComponent<SpriteRenderer>().sortingOrder = 0;
+				targetCharacter.GetComponent<SpriteRenderer>().sortingOrder = 1;
+				SetTriggerByName("Player", targetCharacter);
+				yield return new WaitForSeconds(1f);
+			}
 
 			SetVisibleOfValues(sourceCard, true);
 			SetVisibleOfValues(targetCard, true);
@@ -170,6 +175,19 @@ namespace com.Gemfile.Merger
 			Destroy(mergingCard);
 
 			yield return new WaitForSeconds(0.4f);
+		}
+
+		void SetTriggerByName(string targetCardName, Transform character)
+		{
+			var animator = character.GetComponent<Animator>();
+			switch(targetCardName) 
+			{
+				case "Potion": 
+				case "Coin": 
+				case "Weapon": 
+				case "Magic": animator.SetTrigger("jesture"); break;
+				default: animator.SetTrigger("attack"); break;
+			}
 		}
 
 		IEnumerator EndMerging(Position targetPosition, GameObject player, PlayerData playerData) 
@@ -181,7 +199,7 @@ namespace com.Gemfile.Merger
 				// player
 			}
 
-			yield return new WaitForSeconds(1f);
+			yield return null;
 		}
 
 		void CallAnimation(GameObject targetCard, string name)
@@ -196,7 +214,7 @@ namespace com.Gemfile.Merger
 			targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>().text = value;
 		}
 
-		void SetVisibleOfValues(GameObject targetCard, bool visible) 
+		void SetVisibleOfValues(GameObject targetCard, bool visible)
 		{
 			targetCard.transform.GetChild(0).Find("Value").GetComponent<TextMesh>().gameObject.SetActive(visible);
 			targetCard.transform.GetChild(0).Find("Name").GetComponent<TextMesh>().gameObject.SetActive(visible);
@@ -217,7 +235,7 @@ namespace com.Gemfile.Merger
 			return coroutineQueue.IsRunning();
 		}
 
-		internal void MakeField(Position position, CardData cardData, Position playerPosition) 
+		internal void MakeField(Position position, CardData cardData, Position playerPosition)
 		{
 			var card = new GameObject();
 			card.transform.SetParent(field.transform);
@@ -366,7 +384,7 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		IEnumerator TakeCapture(GameObject player, GameObject targetCard)
+		IEnumerator TakeCapture(GameObject player, GameObject targetCard, PlayerData playerData)
 		{
 			yield return new WaitForEndOfFrame();
 
@@ -393,7 +411,7 @@ namespace com.Gemfile.Merger
 				Screen.height / Camera.main.orthographicSize / 2
 			);
 
-			spriteCapturedEvent.Invoke(capturedSprite);
+			spriteCapturedEvent.Invoke(capturedSprite, playerData.merged, playerData.equipments);
 		}
 
         internal Bounds GetBackgroundSize()

@@ -83,8 +83,8 @@ namespace com.Gemfile.Merger
 		void PrepareAView()
 		{
 			gameView.Prepare();
-			gameView.spriteCapturedEvent.AddListener(sprite => {
-				gameUi.AddCardAcquired(sprite);
+			gameView.spriteCapturedEvent.AddListener((sprite, merged, equipments) => {
+				gameUi.AddCardAcquired(sprite, merged, equipments);
 			});
 			gameUi.Prepare();
 		}

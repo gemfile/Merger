@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace com.Gemfile.Merger 
 {
@@ -7,9 +8,10 @@ namespace com.Gemfile.Merger
 	{
 		int hp;
 		readonly int limitOfHp;
-		int atk;
 		int def;
 		int coin;
+
+		ICard weapon;
 
 		public int Hp 
 		{
@@ -17,16 +19,16 @@ namespace com.Gemfile.Merger
 		}
 		public int Atk
 		{
-			get { return atk; }
+			get { return weapon != null ? weapon.GetValue() : 0; }
 		}
 		
 		public Player(CardData cardData): base(cardData) 
 		{
 			hp = cardData.value;
 			limitOfHp = hp;
-			atk = 0;
 			def = 0;
 			coin = 0;
+			weapon = null;
 		}
 
 		public PlayerData Merge(ICard card, bool useWeapon = true) 
@@ -45,8 +47,8 @@ namespace com.Gemfile.Merger
 				case "Monster":
 					int monsterValue = card.GetValue();
 					if (useWeapon) {
-						monsterValue = Math.Max(0, monsterValue - atk);
-						atk = 0;
+						monsterValue = Math.Max(0, monsterValue - weapon.GetValue());
+						weapon = null;
 					}
 					if (monsterValue > 0) {
 						int initialDef = def;
@@ -62,20 +64,20 @@ namespace com.Gemfile.Merger
 					break;
 
 				case "Weapon":
-					atk = card.GetValue();
+					weapon = card;
 					break;
 			}
 
-			Debug.Log("Stats after merging : hp " + hp  + ", atk " + atk + ", def " + def + ", coin " + coin);
+			Debug.Log("Stats after merging : hp " + hp  + ", atk " + Atk + ", def " + def + ", coin " + coin);
 			Debug.Log("===============");
-			return new PlayerData { hp = hp, coin = coin, atk = atk, def = def };
+			return new PlayerData { hp = hp, coin = coin, atk = Atk, def = def, merged = card, equipments = new List<ICard>{ weapon } };
 		}
 
         internal bool CantMerge(ICard target)
         {
             return (
 				target is Empty ||
-				(target is Monster && atk <= 0)
+				(target is Monster && Atk <= 0)
 			);
         }
     }

@@ -59,6 +59,8 @@ namespace com.Gemfile.Merger
 		public int atk;
 		public int def;
 		public int coin;
+		public ICard merged;
+		public List<ICard> equipments;
 	}
 
 	class Empty: CardBase 
