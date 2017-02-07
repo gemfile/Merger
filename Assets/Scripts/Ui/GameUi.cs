@@ -53,10 +53,11 @@ namespace com.Gemfile.Merger
             handCards.RemoveAll(handCard => {
                 if (!equipments.Exists(equipment => equipment == handCard.card))
                 {
+                    var delay = 0.8f;
                     var sequence = DOTween.Sequence();
-                    sequence.SetDelay(0.8f);
+                    sequence.SetDelay(delay);
                     sequence.Append(handCard.gameObject.transform.GetChild(0).GetComponent<Image>().DOFade(0, .4f));
-                    sequence.Insert(0.8f, handCard.gameObject.GetComponent<RectTransform>().DOAnchorPosY(-40, .4f));
+                    sequence.Insert(delay, handCard.gameObject.GetComponent<RectTransform>().DOAnchorPosY(-40, .4f));
                     sequence.AppendCallback(() => Destroy(handCard.gameObject));
                     return true;
                 }

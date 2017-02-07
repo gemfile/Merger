@@ -133,8 +133,8 @@ namespace com.Gemfile.Merger
 			SetVisibleOfValues(sourceCard, false);
 			SetVisibleOfValues(targetCard, false);
 			var x = (targetCard.transform.localPosition - sourceCard.transform.localPosition).normalized.x;
-			sourceCard.transform.localScale = new Vector3(
-				Mathf.Abs(x) == 1 ? x : sourceCard.transform.localScale.x,
+			sourceCharacter.transform.localScale = new Vector3(
+				Mathf.Abs(x) == 1 ? x : sourceCharacter.transform.localScale.x,
 				1,
 				1
 			);
@@ -157,7 +157,12 @@ namespace com.Gemfile.Merger
 			Transform sourceCharacter,
 			Transform targetCharacter
 		) {
-			SetTriggerByName(targetCard.name, sourceCharacter);
+			var actionsLogs = playerData.actionLogs;
+			if (actionsLogs[0].type == ActionType.ATTACK)
+			{
+				SetDamage(targetCard, -actionsLogs[0].value);
+			}
+			SetTriggerByName(targetCard.name, sourceCharacter)
 			yield return new WaitForSeconds(1f);
 
 			if (targetCard.name == "Monster")
@@ -165,6 +170,7 @@ namespace com.Gemfile.Merger
 				sourceCharacter.GetComponent<SpriteRenderer>().sortingOrder = 0;
 				targetCharacter.GetComponent<SpriteRenderer>().sortingOrder = 1;
 				SetTriggerByName("Player", targetCharacter);
+				SetDamage(targetCard, -playerData.actionLogs[1].value);
 				yield return new WaitForSeconds(1f);
 			}
 
@@ -177,17 +183,50 @@ namespace com.Gemfile.Merger
 			yield return new WaitForSeconds(0.4f);
 		}
 
-		void SetTriggerByName(string targetCardName, Transform character)
+		void SetDamage(GameObject targetCard, int damagedValue)
+		{
+			TextMesh valueText = GetText(targetCard, "Damaged");
+
+			var delay = 0.8f;
+			var sequence = DOTween.Sequence();
+			sequence.SetDelay(delay);
+			sequence.AppendCallback(() => {
+				var originValue = int.Parse(GetText(targetCard, "Value").text);
+				SetValue(targetCard, "Damaged", damagedValue.ToString());
+				SetVisible(targetCard, "Damaged", true);
+			});
+			sequence.Append(
+				DOTween.To(
+					() => valueText.color,
+					x => valueText.color = x,
+					new Color(valueText.color.r, valueText.color.g, valueText.color.b, 1),
+					.8f
+				).From().SetEase(Ease.InCubic)
+			);
+			sequence.Insert(
+				delay, 
+				valueText.transform.DOLocalMoveY(valueText.transform.localPosition.y - 0.04f, 0.8f).From()
+			);
+			sequence.AppendCallback(() => {
+				SetVisible(targetCard, "Damaged", false);
+			});
+		}
+
+		string SetTriggerByName(string targetCardName, Transform character)
 		{
 			var animator = character.GetComponent<Animator>();
+			string trigger;
 			switch(targetCardName) 
 			{
 				case "Potion": 
 				case "Coin": 
 				case "Weapon": 
-				case "Magic": animator.SetTrigger("jesture"); break;
-				default: animator.SetTrigger("attack"); break;
+				case "Magic": trigger = "jesture"; break;
+				default: trigger = "attack"; break;
 			}
+
+			animator.SetTrigger(trigger);
+			return trigger;
 		}
 
 		IEnumerator EndMerging(Position targetPosition, GameObject player, PlayerData playerData) 
@@ -212,6 +251,16 @@ namespace com.Gemfile.Merger
 		void SetValue(GameObject targetCard, string key, string value)
 		{
 			targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>().text = value;
+		}
+		
+		TextMesh GetText(GameObject targetCard, string key)
+		{
+			return targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>();
+		}
+
+		void SetVisible(GameObject targetCard, string key, bool visible)
+		{
+			targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>().gameObject.SetActive(visible);
 		}
 
 		void SetVisibleOfValues(GameObject targetCard, bool visible)

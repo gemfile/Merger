@@ -1,6 +1,6 @@
 ﻿namespace com.Gemfile.Merger 
 {
-	public interface ICard 
+	internal interface ICard 
 	{
 		int GetValue();
 		string GetResourceName();

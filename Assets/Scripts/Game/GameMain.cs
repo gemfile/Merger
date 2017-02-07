@@ -53,14 +53,15 @@ namespace com.Gemfile.Merger
 		public string cardName;
 	}
 
-	public class PlayerData 
+	internal class PlayerData 
 	{
-		public int hp;
-		public int atk;
-		public int def;
-		public int coin;
-		public ICard merged;
-		public List<ICard> equipments;
+		internal int hp;
+		internal int atk;
+		internal int def;
+		internal int coin;
+		internal ICard merged;
+		internal List<ICard> equipments;
+		internal List<ActionLog> actionLogs; 
 	}
 
 	class Empty: CardBase 

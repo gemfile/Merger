@@ -6,7 +6,7 @@
 		{
 		}
 
-		public PlayerData Merge(Player player) 
+		internal PlayerData Merge(Player player) 
 		{
 			return player.Merge(this, false);
 		}
