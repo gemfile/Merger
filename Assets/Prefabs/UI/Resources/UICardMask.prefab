@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 222447488108386554}
   - component: {fileID: 114633966189365820}
   - component: {fileID: 114693568533296396}
+  - component: {fileID: 114605372746387374}
   m_Layer: 5
   m_Name: UICardMask
   m_TagString: Untagged
@@ -46,6 +47,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &114605372746387374
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1310159804591502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1254083943, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_AspectMode: 2
+  m_AspectRatio: 0.7037037
 --- !u!114 &114633966189365820
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -132,7 +146,7 @@ RectTransform:
   m_GameObject: {fileID: 1310159804591502}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8, y: 8, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 224445774564504384}
   m_Father: {fileID: 0}
@@ -140,8 +154,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -80}
-  m_SizeDelta: {x: 38, y: 54}
+  m_AnchoredPosition: {x: 10, y: -30}
+  m_SizeDelta: {x: 304, y: 432}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!224 &224445774564504384
 RectTransform:

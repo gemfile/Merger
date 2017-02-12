@@ -34,19 +34,27 @@ namespace com.Gemfile.Merger
         {
             yield return null;
             Bounds backgroundBounds = gameView.GetBackgroundSize();
-			var backgroundSize = Camera.main.WorldToScreenPoint(new Vector2(backgroundBounds.size.x, backgroundBounds.size.y));
-            transform.GetChild(0).Find("EmptyArea").GetComponent<LayoutElement>().minHeight = backgroundSize.y/2;
-            transform.GetChild(0).Find("Bottom").GetChild(0).GetComponent<LayoutElement>().preferredWidth = backgroundSize.x;
+            Vector3 leftBottom = Camera.main.WorldToScreenPoint(backgroundBounds.min);
+			Vector3 rightTop = Camera.main.WorldToScreenPoint(backgroundBounds.max);
+            var backgroundSize = rightTop - leftBottom;
+            
+            transform.Find("Bottom").GetComponent<RectTransform>().sizeDelta = new Vector2(
+                Mathf.Min(backgroundSize.x, Screen.width), 
+                Screen.height - backgroundSize.y
+            );
         }
 
-        internal void AddCardAcquired(Sprite sprite, ICard merged, List<ICard> equipments)
+        internal void AddCardAcquired(Sprite sprite, Vector3 size, ICard merged, List<ICard> equipments)
         {
             if (equipments.Exists(equipment => equipment == merged))
             {
                 var uiCardMask = ResourceCache.Instantiate("UICardMask");
                 uiCardMask.transform.SetParent(handContainer, false);
                 uiCardMask.transform.Find("UICard").GetComponent<Image>().sprite = sprite;
-                uiCardMask.GetComponent<RectTransform>().DOAnchorPosY(-382, .4f).From().SetEase(Ease.OutCubic).SetDelay(0.8f);
+
+                var uiCardTransform = uiCardMask.GetComponent<RectTransform>();
+                uiCardTransform.sizeDelta = size;
+                uiCardTransform.DOAnchorPosY(uiCardTransform.anchoredPosition.y - size.y, .4f).From().SetEase(Ease.OutCubic).SetDelay(0.8f);
                 handCards.Add(new UIHandCard(){ gameObject = uiCardMask, card = merged });
             }
 

@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
-	internal class SpriteCapturedEvent: UnityEvent<Sprite, ICard, List<ICard>> {}
+	internal class SpriteCapturedEvent: UnityEvent<Sprite, Vector3, ICard, List<ICard>> {}
 
     class FieldNewAdded
 	{
@@ -30,6 +30,7 @@ namespace com.Gemfile.Merger
 		List<FieldNewAdded> fieldsNewAdded;
 		GameObject player;
 
+		Bounds initialBoundsOfBackground;
 		Bounds sizeOfCard;
 
 		GameObject field;
@@ -50,6 +51,8 @@ namespace com.Gemfile.Merger
 			field.name = "Field";
 
 			background = transform.Find("Background").gameObject;
+			initialBoundsOfBackground = background.GetBounds();
+
 			coroutineQueue = new CoroutineQueue(3, StartCoroutine);
 			
 			spriteCapturedEvent = new SpriteCapturedEvent();
@@ -135,7 +138,7 @@ namespace com.Gemfile.Merger
 			var sourceCharacter = sourceCard.transform.GetChild(1);
 			var targetCharacter = targetCard.transform.GetChild(1);
 
-			yield return StartCoroutine(TakeCapture(player, mergingCard, playerData));
+			yield return StartCoroutine(TakeCapture(mergingCard, playerData));
 			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceCharacter, targetCharacter));
 			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerData, actionLogCaches));
 			yield return StartCoroutine(EndMerging(mergingInfo.targetPosition, player, playerData));
@@ -173,7 +176,7 @@ namespace com.Gemfile.Merger
 			PlayerData playerData,
 			List<ActionLogCache> actionLogCaches
 		) {
-			foreach(var actionLogCache in actionLogCaches)
+			foreach (var actionLogCache in actionLogCaches)
 			{
 				var sourceCharacter = actionLogCache.sourceCard.transform.GetChild(1);
 				var targetCharacter = actionLogCache.targetCard.transform.GetChild(1);
@@ -182,7 +185,7 @@ namespace com.Gemfile.Merger
 				
 				SetTriggerOnAction(actionLogCache.targetCard, actionLogCache.sourceCard);
 
-				switch(actionLogCache.type) {
+				switch (actionLogCache.type) {
 					case ActionType.ATTACK:
 					case ActionType.GET_DAMAGED:
 						SetDamage(actionLogCache.targetCard, -actionLogCache.valueAffected);
@@ -197,12 +200,10 @@ namespace com.Gemfile.Merger
 			SetValue(player, "Value", playerData.hp.ToString());
 
 			SetTriggerOnMerging(mergingCard);
-			yield return new WaitForSeconds(1f);
+			yield return new WaitForSeconds(.8f);
 
 			mergingCard.SetActive(false);
 			Destroy(mergingCard);
-
-			yield return new WaitForSeconds(0.4f);
 		}
 
 		void SetDamage(GameObject targetCard, int damagedValue)
@@ -215,7 +216,7 @@ namespace com.Gemfile.Merger
 			sequence.AppendCallback(() => {
 				var originValue = int.Parse(GetText(targetCard, "Value").text);
 				SetValue(targetCard, "Damaged", damagedValue.ToString());
-				SetVisible(targetCard, "Damaged", true);
+				SetVisibleOfText(targetCard, "Damaged", true);
 			});
 			sequence.Append(
 				DOTween.To(
@@ -230,14 +231,14 @@ namespace com.Gemfile.Merger
 				valueText.transform.DOLocalMoveY(valueText.transform.localPosition.y - 0.04f, 0.8f).From()
 			);
 			sequence.AppendCallback(() => {
-				SetVisible(targetCard, "Damaged", false);
+				SetVisibleOfText(targetCard, "Damaged", false);
 			});
 		}
 
 		void SetTriggerOnAction(GameObject targetCard, GameObject sourceCard)
 		{
 			string trigger;
-			switch(targetCard.name)
+			switch (targetCard.name)
 			{
 				case "Potion": 
 				case "Coin": 
@@ -256,13 +257,13 @@ namespace com.Gemfile.Merger
 			{
 				CallAnimation(mergingCard, "death");
 			}
-			mergingCard.transform.GetChild(1).GetComponent<SpriteRenderer>().DOFade(0, 1f);
+			mergingCard.transform.GetChild(1).GetComponent<SpriteRenderer>().DOFade(0, .4f).SetDelay(.4f);
 		}
 
 		IEnumerator EndMerging(Position targetPosition, GameObject player, PlayerData playerData) 
 		{
 			fields[targetPosition.index] = player;
-			if(playerData.hp <= 0) 
+			if (playerData.hp <= 0) 
 			{
 				CallAnimation(player, "death");
 				// player
@@ -288,7 +289,7 @@ namespace com.Gemfile.Merger
 			return targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>();
 		}
 
-		void SetVisible(GameObject targetCard, string key, bool visible)
+		void SetVisibleOfText(GameObject targetCard, string key, bool visible)
 		{
 			targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>().gameObject.SetActive(visible);
 		}
@@ -304,9 +305,33 @@ namespace com.Gemfile.Merger
 			targetCard.transform.GetChild(1).gameObject.SetActive(visible);
 		}
 
-		void SetVisibleOfMask(GameObject targetCard, bool visible)
+		void SetVisibleOfChild(GameObject targetCard, string key, bool visible)
 		{
-			targetCard.transform.GetChild(0).Find("Mask").gameObject.SetActive(visible);
+			targetCard.transform.GetChild(0).Find(key).gameObject.SetActive(visible);
+		}
+
+		void SetSuit(GameObject targetCard, string name)
+		{
+			var suits = targetCard.transform.GetChild(0).Find("Suit").transform;
+			foreach (Transform suit in suits)
+			{
+				suit.gameObject.SetActive(false);
+			}
+
+			var targetSuit = "";
+			switch (name)
+			{
+				case "Potion": targetSuit = "Heart"; break;
+				case "Coin": targetSuit = "Diamond"; break;
+				case "Weapon": targetSuit = "Club"; break;
+				case "Magic": targetSuit = "Club"; break;
+				case "Monster": targetSuit = "Spade"; break;
+			}
+
+			if (targetSuit != "")
+			{
+				suits.Find(targetSuit).gameObject.SetActive(true);
+			}
 		}
 
 		internal bool IsPlaying()
@@ -325,7 +350,8 @@ namespace com.Gemfile.Merger
 			sizeOfCard = card.GetBounds();
 			SetValue(card, "Name", cardData.cardName);
 			SetValue(card, "Value", cardData.value.ToString());
-			SetVisibleOfMask(card, false);
+			SetVisibleOfChild(card, "Mask", false);
+			SetSuit(card, card.name);
 
 			var cardResource = ResourceCache.Instantiate(cardData.resourceName, transform);
 			cardResource.transform.SetParent(card.transform);
@@ -362,9 +388,10 @@ namespace com.Gemfile.Merger
 						.SetLoops(2, LoopType.Yoyo)
 						.SetEase(Ease.InOutCubic)
 						.OnStepComplete(()=>{
-							SetVisibleOfMask(card, true);
+							SetVisibleOfChild(card, "Mask", true);
 							SetVisibleOfValues(card, true);
 							SetVisibleOfResource(card, true);
+							SetVisibleOfChild(card, "Suit", true);
 						})
 				);
 			});
@@ -396,16 +423,16 @@ namespace com.Gemfile.Merger
 
 			var sampleCeiling = ResourceCache.Instantiate("Ceilings");
 			var sizeOfCeiling = sampleCeiling.GetBounds();
-			var sizeOfBackground = background.GetBounds();
 			Destroy(sampleCeiling);
 
+			var sizeOfBackground = initialBoundsOfBackground;
 			var startVectorOfRight = new Vector2(
 				sizeOfBackground.max.x + sizeOfCeiling.extents.x,
-				sizeOfBackground.max.y - sizeOfCeiling.extents.y
+				sizeOfBackground.max.y + sizeOfCeiling.extents.y
 			);
 			var startVectorOfLeft = new Vector2(
 				sizeOfBackground.min.x - sizeOfCeiling.extents.x,
-				sizeOfBackground.max.y - sizeOfCeiling.extents.y
+				sizeOfBackground.max.y + sizeOfCeiling.extents.y
 			);
 
 			Debug.Log("hoi :" + sizeOfBackground.min.x + ", " + sizeOfCeiling.extents.x + ", " + (sizeOfBackground.min.x - sizeOfCeiling.extents.x));
@@ -463,7 +490,7 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		IEnumerator TakeCapture(GameObject player, GameObject targetCard, PlayerData playerData)
+		IEnumerator TakeCapture(GameObject targetCard, PlayerData playerData)
 		{
 			yield return new WaitForEndOfFrame();
 
@@ -490,12 +517,12 @@ namespace com.Gemfile.Merger
 				Screen.height / Camera.main.orthographicSize / 2
 			);
 
-			spriteCapturedEvent.Invoke(capturedSprite, playerData.merged, playerData.equipments);
+			spriteCapturedEvent.Invoke(capturedSprite, size, playerData.merged, playerData.equipments);
 		}
 
         internal Bounds GetBackgroundSize()
         {
-            return background.GetBounds();
+            return initialBoundsOfBackground;
         }
     }
 }

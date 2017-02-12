@@ -6,10 +6,8 @@ namespace com.Gemfile.Merger
 	public class Root: MonoBehaviour 
 	{
 		readonly GameMain gameMain;
-		[SerializeField]
 		GameView gameView;
-		[SerializeField]
-		GameUI gameUi;
+		GameUI gameUI;
 		Swipe swipe;
 
 		Root() 
@@ -82,11 +80,14 @@ namespace com.Gemfile.Merger
 
 		void PrepareAView()
 		{
+			gameView = transform.Find("GameView").GetComponent<GameView>();
+			gameUI = transform.Find("GameUI").GetComponent<GameUI>();
+			
 			gameView.Prepare();
-			gameView.spriteCapturedEvent.AddListener((sprite, merged, equipments) => {
-				gameUi.AddCardAcquired(sprite, merged, equipments);
+			gameView.spriteCapturedEvent.AddListener((sprite, size, merged, equipments) => {
+				gameUI.AddCardAcquired(sprite, size, merged, equipments);
 			});
-			gameUi.Prepare();
+			gameUI.Prepare();
 		}
 
 		IEnumerator StartTheGame() 

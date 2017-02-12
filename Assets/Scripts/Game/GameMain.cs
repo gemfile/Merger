@@ -220,7 +220,7 @@ namespace com.Gemfile.Merger
 			var previousPhase = GetPreviousPhase();
 			var currentPhase = GetCurrentPhase();
 
-			if(currentPhase == PhaseOfGame.PLAY)
+			if (currentPhase == PhaseOfGame.PLAY)
 			{
 				int playerIndex = GetIndex(player);
 
