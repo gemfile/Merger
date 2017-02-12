@@ -15,6 +15,14 @@ namespace com.Gemfile.Merger
 		internal Vector2 createdFrom;
 	}
 
+	class ActionLogCache
+	{
+		internal GameObject sourceCard;
+		internal GameObject targetCard;
+		internal ActionType type;
+		internal int valueAffected;
+	}
+
     internal class GameView : MonoBehaviour 
 	{
 		string[] deckNames;
@@ -114,13 +122,22 @@ namespace com.Gemfile.Merger
 			var sourceCard = fields[mergingInfo.sourcePosition.index];
 			var targetCard = fields[mergingInfo.targetPosition.index];
 			var playerData = mergingInfo.playerData;
+			var actionLogCaches = new List<ActionLogCache>();
+			playerData.actionLogs.ForEach(actionLog => {
+				actionLogCaches.Add(new ActionLogCache() {
+					sourceCard = fields[actionLog.sourcePosition.index],
+					targetCard = fields[actionLog.targetPosition.index],
+					type = actionLog.type,
+					valueAffected = actionLog.valueAffected
+				});
+			});
 
 			var sourceCharacter = sourceCard.transform.GetChild(1);
 			var targetCharacter = targetCard.transform.GetChild(1);
 
 			yield return StartCoroutine(TakeCapture(player, mergingCard, playerData));
 			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceCharacter, targetCharacter));
-			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerData, sourceCharacter, targetCharacter));
+			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerData, actionLogCaches));
 			yield return StartCoroutine(EndMerging(mergingInfo.targetPosition, player, playerData));
 		}
 
@@ -154,29 +171,34 @@ namespace com.Gemfile.Merger
 			GameObject targetCard, 
 			GameObject mergingCard, 
 			PlayerData playerData,
-			Transform sourceCharacter,
-			Transform targetCharacter
+			List<ActionLogCache> actionLogCaches
 		) {
-			var actionsLogs = playerData.actionLogs;
-			if (actionsLogs[0].type == ActionType.ATTACK)
+			foreach(var actionLogCache in actionLogCaches)
 			{
-				SetDamage(targetCard, -actionsLogs[0].value);
-			}
-			SetTriggerByName(targetCard.name, sourceCharacter)
-			yield return new WaitForSeconds(1f);
+				var sourceCharacter = actionLogCache.sourceCard.transform.GetChild(1);
+				var targetCharacter = actionLogCache.targetCard.transform.GetChild(1);
+				sourceCharacter.GetComponent<SpriteRenderer>().sortingOrder = 1;
+				targetCharacter.GetComponent<SpriteRenderer>().sortingOrder = 0;
+				
+				SetTriggerOnAction(actionLogCache.targetCard, actionLogCache.sourceCard);
 
-			if (targetCard.name == "Monster")
-			{
-				sourceCharacter.GetComponent<SpriteRenderer>().sortingOrder = 0;
-				targetCharacter.GetComponent<SpriteRenderer>().sortingOrder = 1;
-				SetTriggerByName("Player", targetCharacter);
-				SetDamage(targetCard, -playerData.actionLogs[1].value);
+				switch(actionLogCache.type) {
+					case ActionType.ATTACK:
+					case ActionType.GET_DAMAGED:
+						SetDamage(actionLogCache.targetCard, -actionLogCache.valueAffected);
+						break;
+				}
+				
 				yield return new WaitForSeconds(1f);
 			}
 
 			SetVisibleOfValues(sourceCard, true);
 			SetVisibleOfValues(targetCard, true);
 			SetValue(player, "Value", playerData.hp.ToString());
+
+			SetTriggerOnMerging(mergingCard);
+			yield return new WaitForSeconds(1f);
+
 			mergingCard.SetActive(false);
 			Destroy(mergingCard);
 
@@ -212,11 +234,10 @@ namespace com.Gemfile.Merger
 			});
 		}
 
-		string SetTriggerByName(string targetCardName, Transform character)
+		void SetTriggerOnAction(GameObject targetCard, GameObject sourceCard)
 		{
-			var animator = character.GetComponent<Animator>();
 			string trigger;
-			switch(targetCardName) 
+			switch(targetCard.name)
 			{
 				case "Potion": 
 				case "Coin": 
@@ -224,9 +245,18 @@ namespace com.Gemfile.Merger
 				case "Magic": trigger = "jesture"; break;
 				default: trigger = "attack"; break;
 			}
+			
+			Debug.Log("SetTriggerOnAction : " + trigger);
+			CallAnimation(sourceCard, trigger);
+		}
 
-			animator.SetTrigger(trigger);
-			return trigger;
+		void SetTriggerOnMerging(GameObject mergingCard)
+		{
+			if (mergingCard.name == "Monster")
+			{
+				CallAnimation(mergingCard, "death");
+			}
+			mergingCard.transform.GetChild(1).GetComponent<SpriteRenderer>().DOFade(0, 1f);
 		}
 
 		IEnumerator EndMerging(Position targetPosition, GameObject player, PlayerData playerData) 

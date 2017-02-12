@@ -6,9 +6,9 @@
 		{
 		}
 
-		internal PlayerData Merge(Player player) 
+		internal PlayerData Merge(Player player, Position playerPosition, Position cardPosition, bool canUseWeapon = false) 
 		{
-			return player.Merge(this, false);
+			return player.Merge(this, playerPosition, cardPosition, canUseWeapon);
 		}
 	}
 }

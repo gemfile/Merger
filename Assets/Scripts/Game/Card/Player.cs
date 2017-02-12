@@ -12,8 +12,9 @@ namespace com.Gemfile.Merger
 	internal class ActionLog
 	{
 		internal ActionType type;
-		internal ICard card;
-		internal int value;
+		internal Position sourcePosition;
+		internal Position targetPosition;
+		internal int valueAffected;
 	}
 
 	public class Player: CardBase 
@@ -43,27 +44,42 @@ namespace com.Gemfile.Merger
 			weapon = null;
 		}
 
-		internal PlayerData Merge(ICard card, bool useWeapon = true) 
+		internal PlayerData Merge(ICard card, Position playerPosition, Position cardPosition, bool canUseWeapon = true) 
 		{
 			Debug.Log("=== Merging ===");
 			var actionLogs = new List<ActionLog>();
 			switch (card.GetType().Name) 
 			{
 				case "Coin":
-					actionLogs.Add(new ActionLog(){ type=ActionType.GET, card=card, value=card.GetValue() });
+					actionLogs.Add(new ActionLog() { 
+						type = ActionType.GET, 
+						sourcePosition = playerPosition, 
+						targetPosition = cardPosition, 
+						valueAffected = card.GetValue() 
+					});
 					coin += card.GetValue();
 					break;
 
 				case "Potion":
 					var nextHp = Math.Min(limitOfHp, hp + card.GetValue());
-					actionLogs.Add(new ActionLog(){ type=ActionType.USE, card=card, value=nextHp-hp });
+					actionLogs.Add(new ActionLog() { 
+						type = ActionType.USE, 
+						sourcePosition = playerPosition, 
+						targetPosition = cardPosition, 
+						valueAffected = nextHp-hp 
+					});
 					hp = nextHp;
 					break;
 
 				case "Monster":
 					int monsterValue = card.GetValue();
-					if (useWeapon) {
-						actionLogs.Add(new ActionLog(){ type=ActionType.ATTACK, card=weapon, value=weapon.GetValue() });
+					if (canUseWeapon && weapon != null) {
+						actionLogs.Add(new ActionLog() { 
+							type = ActionType.ATTACK, 
+							sourcePosition = playerPosition, 
+							targetPosition = cardPosition, 
+							valueAffected = weapon.GetValue() 
+						});
 						monsterValue = Math.Max(0, monsterValue - weapon.GetValue());
 						weapon = null;
 					}
@@ -73,17 +89,33 @@ namespace com.Gemfile.Merger
 						monsterValue -= initialDef;
 					}
 					if (monsterValue > 0) {
-						actionLogs.Add(new ActionLog(){ type=ActionType.GET_DAMAGED, card=card, value=monsterValue });
+						actionLogs.Add(new ActionLog() { 
+							type = ActionType.GET_DAMAGED, 
+							sourcePosition = cardPosition, 
+							targetPosition = playerPosition, 
+							valueAffected = monsterValue 
+						});
 						hp -= monsterValue;
 					}
 					break;
 
 				case "Magic":
+					actionLogs.Add(new ActionLog() { 
+						type = ActionType.GET, 
+						sourcePosition = playerPosition, 
+						targetPosition = cardPosition, 
+						valueAffected = card.GetValue() 
+					});
 					break;
 
 				case "Weapon":
 					weapon = card;
-					actionLogs.Add(new ActionLog(){ type=ActionType.GET, card=card, value=card.GetValue() });
+					actionLogs.Add(new ActionLog(){ 
+						type=ActionType.GET, 
+						sourcePosition = playerPosition, 
+						targetPosition = cardPosition, 
+						valueAffected = card.GetValue() 
+					});
 					break;
 			}
 

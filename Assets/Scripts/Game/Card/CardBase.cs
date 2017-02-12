@@ -1,4 +1,6 @@
-﻿namespace com.Gemfile.Merger 
+﻿using System;
+
+namespace com.Gemfile.Merger 
 {
 	public class CardBase: ICard 
 	{

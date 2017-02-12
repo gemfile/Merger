@@ -322,7 +322,7 @@ namespace com.Gemfile.Merger
 
 			if (infrontofPlayer.IsAcceptableIndex() && frontCard != null && !player.CantMerge(frontCard))
 			{
-				PlayerData playerData = player.Merge(frontCard);
+				PlayerData playerData = player.Merge(frontCard, playerPosition, infrontofPlayer);
 				fields[infrontofPlayer.index] = player;
 				fields[playerIndex] = new Empty();
 				fieldMergingEvent.Invoke(
@@ -337,7 +337,7 @@ namespace com.Gemfile.Merger
 			}
 			else if (inbackofPlayer.IsAcceptableIndex() && backCardMonster != null)
 			{
-				PlayerData playerData = backCardMonster.Merge(player);
+				PlayerData playerData = backCardMonster.Merge(player, playerPosition, inbackofPlayer);
 				fields[inbackofPlayer.index] = new Empty();
 				fieldMergingEvent.Invoke(
 					new MergingInfo() {
