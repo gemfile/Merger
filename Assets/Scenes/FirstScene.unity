@@ -7438,6 +7438,7 @@ GameObject:
   m_Component:
   - component: {fileID: 971013115}
   - component: {fileID: 971013116}
+  - component: {fileID: 971013117}
   m_Layer: 0
   m_Name: GameView
   m_TagString: Untagged
@@ -7471,6 +7472,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10df06355336b4b23a4257d9055df70f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &971013117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 971013114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 551c48fe1907840e9b7023f1ed76490d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  edges:
+  - {x: -0.71999997, y: -0.88, z: 0}
+  - {x: 0.71999997, y: -0.88, z: 0}
+  - {x: 0.71999997, y: 1.04, z: 0}
+  - {x: -0.71999997, y: 1.04, z: 0}
+  - {x: -0.71999997, y: -0.88, z: 0}
 --- !u!1 &996902979
 GameObject:
   m_ObjectHideFlags: 0
