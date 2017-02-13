@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System;
+using DG.Tweening;
 
 namespace com.Gemfile.Merger 
 {
@@ -34,6 +35,17 @@ namespace com.Gemfile.Merger
 			{
 				mapFunction(item);
 			}
+		}
+
+		public static Tween FadeIn(this TextMesh text, float duration)
+		{
+			text.color = new Color(text.color.r, text.color.g, text.color.b, 0);
+			return DOTween.To(
+				() => text.color,
+				x => text.color = x,
+				new Color(text.color.r, text.color.g, text.color.b, 1),
+				duration
+			).SetEase(Ease.InCubic);
 		}
     }   
 }

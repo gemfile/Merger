@@ -39,6 +39,8 @@ namespace com.Gemfile.Merger
 		CoroutineQueue coroutineQueue;
 		internal SpriteCapturedEvent spriteCapturedEvent;
 
+		const float GAPS_BETWEEN_CARDS = 0.04f;
+
 		internal void Prepare() 
 		{
 			deckNames = new string[] { "Deck" };
@@ -60,7 +62,6 @@ namespace com.Gemfile.Merger
 
 		internal void Init()
 		{
-			Hide();
 			Align();
 			FillBackground();
 
@@ -87,19 +88,14 @@ namespace com.Gemfile.Merger
 
         internal void SetField()
         {
-			StartCoroutine(StartSetting());
-        }
-
-		IEnumerator StartSetting()
-		{
-			yield return null;
 			Hide();
 			ShowCards();
-		}
+        }
 
 		void Hide()
 		{
 			fieldsNewAdded.ForEach((fieldNewAdded) => {
+				fieldNewAdded.card.gameObject.SetActive(false);
 				SetVisibleOfValues(fieldNewAdded.card, false);
 				SetVisibleOfResource(fieldNewAdded.card, false);
 			});
@@ -108,12 +104,15 @@ namespace com.Gemfile.Merger
 		IEnumerator StartMoving(Position targetPosition, Position cardPosition)
 		{
 			var movingCard = fields[cardPosition.index];
-			var targetLocalPosition = new Vector2((sizeOfCard.size.x + 0.1f) * targetPosition.col, (sizeOfCard.size.y + 0.1f) * targetPosition.row);
+			var targetLocalPosition = new Vector2(
+				(sizeOfCard.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col,
+				(sizeOfCard.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
+			);
 			Debug.Log("StartMoving : " + cardPosition.index + ", " + movingCard.name);
 
 			movingCard.transform.DOLocalMove(
 				new Vector2(targetLocalPosition.x, targetLocalPosition.y), 0.4f
-			).SetEase(Ease.OutCubic);
+			).SetEase(Ease.OutSine);
 			fields[targetPosition.index] = movingCard;
 
 			yield return new WaitForSeconds(0.4f);
@@ -152,6 +151,9 @@ namespace com.Gemfile.Merger
 		) {
 			SetVisibleOfValues(sourceCard, false);
 			SetVisibleOfValues(targetCard, false);
+			SetVisibleOfChild(sourceCard, "Suit", false);
+			SetVisibleOfChild(targetCard, "Suit", false);
+			
 			var x = (targetCard.transform.localPosition - sourceCard.transform.localPosition).normalized.x;
 			sourceCharacter.transform.localScale = new Vector3(
 				Mathf.Abs(x) == 1 ? x : sourceCharacter.transform.localScale.x,
@@ -195,8 +197,9 @@ namespace com.Gemfile.Merger
 				yield return new WaitForSeconds(1f);
 			}
 
-			SetVisibleOfValues(sourceCard, true);
-			SetVisibleOfValues(targetCard, true);
+			SetVisibleOfValues(player, true);
+			GetText(player, "Value").FadeIn(.4f);
+			GetText(player, "Name").FadeIn(.4f);
 			SetValue(player, "Value", playerData.hp.ToString());
 
 			SetTriggerOnMerging(mergingCard);
@@ -356,7 +359,10 @@ namespace com.Gemfile.Merger
 			var cardResource = ResourceCache.Instantiate(cardData.resourceName, transform);
 			cardResource.transform.SetParent(card.transform);
 			
-			card.transform.localPosition = new Vector2((sizeOfCard.size.x + 0.1f) * position.col, (sizeOfCard.size.y + 0.1f) * position.row);
+			card.transform.localPosition = new Vector2(
+				(sizeOfCard.size.x + GAPS_BETWEEN_CARDS) * position.col, 
+				(sizeOfCard.size.y + GAPS_BETWEEN_CARDS) * position.row
+			);
 			fields[position.index] = card;
 			fieldsNewAdded.Add(new FieldNewAdded() {
 				card = card, 
@@ -378,12 +384,15 @@ namespace com.Gemfile.Merger
 				Vector3 creatingOffset = createdFrom * 0.21f;
 				Debug.Log("hoi : " + creatingOffset);
 			
-				var duration = .8f;
+				var duration = .66f;
+				var dealy = .14f;
 				var sequence = DOTween.Sequence();
+				sequence.SetDelay(dealy);
+				sequence.InsertCallback(dealy, ()=>card.gameObject.SetActive(true));
 				sequence.Append(card.transform.DOLocalMove(localPosition + creatingOffset, duration).From().SetEase(Ease.OutBack));
 				sequence.Append(card.transform.DOScaleX(-1, duration).From().SetEase(Ease.InOutCubic));
 				sequence.Insert(
-					duration, 
+					dealy + duration, 
 					card.transform.DOLocalMoveY(localPosition.y+.07f, duration/2)
 						.SetLoops(2, LoopType.Yoyo)
 						.SetEase(Ease.InOutCubic)
@@ -439,14 +448,14 @@ namespace com.Gemfile.Merger
 
 			var screenSize = Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
 
-			yield return StartFillEmptyArea(
+			FillEmptyArea(
 				ceilings, 
 				new Vector2(sizeOfCeiling.size.x, -sizeOfCeiling.size.y),
 				startVectorOfRight, 
 				new Vector2(startVectorOfRight.x, -screenSize.y),
 				new Vector2(screenSize.x, screenSize.y)
 			);
-			yield return StartFillEmptyArea(
+			FillEmptyArea(
 				ceilings,
 				new Vector2(-sizeOfCeiling.size.x, -sizeOfCeiling.size.y),
 				startVectorOfLeft,
@@ -455,7 +464,7 @@ namespace com.Gemfile.Merger
 			);
 		}
 
-		IEnumerator StartFillEmptyArea(
+		void FillEmptyArea(
 			GameObject ceilings, 
 			Vector2 offsetOfCeiling, 
 			Vector2 startVector, 
@@ -480,13 +489,11 @@ namespace com.Gemfile.Merger
 				{
 					if(currentPosition.y < minBoundary.y || currentPosition.y > maxBoundary.y)
 					{
-						yield break;
+						break;
 					}
 					col = 0;
 					row++;
 				}
-
-				yield return null;
 			}
 		}
 

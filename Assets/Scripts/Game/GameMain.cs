@@ -7,7 +7,7 @@ using System.Linq;
 namespace com.Gemfile.Merger 
 {
 	internal class FieldAddingEvent: UnityEvent<Position, CardData, Position> {}
-	internal class FieldAddingCompleteEvent: UnityEvent {}
+	internal class FieldAddingCompleteEvent: UnityEvent<int> {}
 	internal class FieldMergingEvent: UnityEvent<MergingInfo> {}
 	internal class FieldMovingEvent: UnityEvent<Position, Position> {}
 	internal class FieldPreparingEvent: UnityEvent<int> {}
@@ -260,7 +260,7 @@ namespace com.Gemfile.Merger
 				fields.ForEach(icard => Debug.Log(icard.Value.GetType() + ", " + icard.Value.GetValue() + ", " + count++));
 				Debug.Log("===============");
 
-				fieldAddingCompleteEvent.Invoke();
+				fieldAddingCompleteEvent.Invoke(deckQueue.Count);
 				SetNextPhase();
 			}
 		}

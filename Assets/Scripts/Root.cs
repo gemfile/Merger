@@ -60,16 +60,18 @@ namespace com.Gemfile.Merger
 				Debug.Log($"fieldAdding: {position.row}, {position.col}, {cardData.type}, {cardData.value}, {cardData.resourceName}, {cardData.cardName}");
 				gameView.MakeField(position, cardData, playerPosition);
 			});
-			gameMain.fieldAddingCompleteEvent.AddListener(() => {
+			gameMain.fieldAddingCompleteEvent.AddListener((deckCount) => {
 				if (initOnce) {
 					initOnce = false;
 					gameView.Init();
 				}
 				gameView.SetField();
+				gameUI.UpdateDeckCount(deckCount);
 			});
 			gameMain.fieldMergingEvent.AddListener(mergingInfo => {
 				Debug.Log($"fieldMerging: {mergingInfo.sourcePosition.row}, {mergingInfo.sourcePosition.col} -> {mergingInfo.targetPosition.row}, {mergingInfo.targetPosition.col}");
 				gameView.MergeField(mergingInfo);
+				gameUI.UpdateCoin(mergingInfo.playerData.coin);
 			});
 			gameMain.fieldMovingEvent.AddListener((targetPosition, cardPosition) => {
 				Debug.Log($"fieldMoving: {cardPosition.row}, {cardPosition.col} to {targetPosition.row}, {targetPosition.col}");

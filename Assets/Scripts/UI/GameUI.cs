@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using System;
 
 namespace com.Gemfile.Merger 
 {
@@ -19,6 +20,10 @@ namespace com.Gemfile.Merger
         [SerializeField]
         private RectTransform handContainer;
         private List<UIHandCard> handCards;
+        [SerializeField]
+        private Text deckCountText;
+        [SerializeField]
+        private Text coinText;
 
         public GameUI()
         {
@@ -37,10 +42,17 @@ namespace com.Gemfile.Merger
             Vector3 leftBottom = Camera.main.WorldToScreenPoint(backgroundBounds.min);
 			Vector3 rightTop = Camera.main.WorldToScreenPoint(backgroundBounds.max);
             var backgroundSize = rightTop - leftBottom;
-            
+
+            var gameWidth = Mathf.Min(backgroundSize.x, Screen.width);
+            var bottomHeight = Screen.height - backgroundSize.y;
             transform.Find("Bottom").GetComponent<RectTransform>().sizeDelta = new Vector2(
-                Mathf.Min(backgroundSize.x, Screen.width), 
-                Screen.height - backgroundSize.y
+                gameWidth, 
+                bottomHeight
+            );
+
+            transform.Find("Top").GetComponent<RectTransform>().sizeDelta = new Vector2(
+                gameWidth, 
+                bottomHeight/4
             );
         }
 
@@ -71,6 +83,16 @@ namespace com.Gemfile.Merger
                 }
                 return false;
             });
+        }
+
+        internal void UpdateCoin(int coin)
+        {
+            coinText.text = coin.ToString();
+        }
+
+        internal void UpdateDeckCount(int deckCount)
+        {
+            deckCountText.text = deckCount.ToString();
         }
     }
 }
