@@ -6,7 +6,7 @@ namespace com.Gemfile.Merger
 {
 	internal enum ActionType
 	{
-		GET = 0, USE, ATTACK, GET_DAMAGED
+		GET = 0, USE_POTION, ATTACK, GET_DAMAGED, GET_COIN
 	}
 	
 	internal class ActionLog
@@ -52,7 +52,7 @@ namespace com.Gemfile.Merger
 			{
 				case "Coin":
 					actionLogs.Add(new ActionLog() { 
-						type = ActionType.GET, 
+						type = ActionType.GET_COIN, 
 						sourcePosition = playerPosition, 
 						targetPosition = cardPosition, 
 						valueAffected = card.GetValue() 
@@ -63,7 +63,7 @@ namespace com.Gemfile.Merger
 				case "Potion":
 					var nextHp = Math.Min(limitOfHp, hp + card.GetValue());
 					actionLogs.Add(new ActionLog() { 
-						type = ActionType.USE, 
+						type = ActionType.USE_POTION, 
 						sourcePosition = playerPosition, 
 						targetPosition = cardPosition, 
 						valueAffected = nextHp-hp 

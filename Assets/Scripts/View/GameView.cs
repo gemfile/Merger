@@ -190,7 +190,13 @@ namespace com.Gemfile.Merger
 				switch (actionLogCache.type) {
 					case ActionType.ATTACK:
 					case ActionType.GET_DAMAGED:
-						SetDamage(actionLogCache.targetCard, -actionLogCache.valueAffected);
+						SetGettingEffect(actionLogCache.targetCard, "Damaged", -actionLogCache.valueAffected);
+						break;
+					case ActionType.GET_COIN:
+						SetGettingEffect(actionLogCache.targetCard, "GettingCoin", actionLogCache.valueAffected);
+						break;
+					case ActionType.USE_POTION:
+						SetGettingEffect(actionLogCache.targetCard, "Damaged", actionLogCache.valueAffected);
 						break;
 				}
 				
@@ -209,17 +215,16 @@ namespace com.Gemfile.Merger
 			Destroy(mergingCard);
 		}
 
-		void SetDamage(GameObject targetCard, int damagedValue)
+		void SetGettingEffect(GameObject targetCard, string nameAffected, int valueAffected)
 		{
-			TextMesh valueText = GetText(targetCard, "Damaged");
+			TextMesh valueText = GetText(targetCard, nameAffected);
 
 			var delay = 0.8f;
 			var sequence = DOTween.Sequence();
 			sequence.SetDelay(delay);
 			sequence.AppendCallback(() => {
-				var originValue = int.Parse(GetText(targetCard, "Value").text);
-				SetValue(targetCard, "Damaged", damagedValue.ToString());
-				SetVisibleOfText(targetCard, "Damaged", true);
+				SetValue(targetCard, nameAffected, (valueAffected >= 0 ? "+" : "") + valueAffected.ToString());
+				SetVisibleOfText(targetCard, nameAffected, true);
 			});
 			sequence.Append(
 				DOTween.To(
@@ -234,7 +239,7 @@ namespace com.Gemfile.Merger
 				valueText.transform.DOLocalMoveY(valueText.transform.localPosition.y - 0.04f, 0.8f).From()
 			);
 			sequence.AppendCallback(() => {
-				SetVisibleOfText(targetCard, "Damaged", false);
+				SetVisibleOfText(targetCard, nameAffected, false);
 			});
 		}
 
