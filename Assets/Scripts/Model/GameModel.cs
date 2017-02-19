@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace com.Gemfile.Merger
 {
-    interface IGameModel
+    public interface IGameModel
     {
         Queue<ICardModel> DeckQueue { get; set; }
         int CountOfFields { get; }
@@ -19,14 +19,14 @@ namespace com.Gemfile.Merger
 
 	public class CardData 
 	{
-		internal string type;
-		internal int value;
-		internal string resourceName;
-		internal string cardName;
+		public string type;
+		public int value;
+		public string resourceName;
+		public string cardName;
 	}
 
     [System.Serializable]
-    class GameModel: IGameModel 
+    public class GameModel: IGameModel 
     {
         public Queue<ICardModel> DeckQueue {
             get { return deckQueue; }
@@ -75,7 +75,7 @@ namespace com.Gemfile.Merger
 		}
         int currentIndexOfPhase;
 
-        internal GameModel()
+        public GameModel()
         {
 			rows = 3;
 			cols = 3;

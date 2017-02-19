@@ -31,7 +31,7 @@ namespace com.Gemfile.Merger
 		internal List<ActionLog> actionLogs; 
 	}
 
-	enum PhaseOfGame
+	public enum PhaseOfGame
 	{
 		FILL = 0,
 		PLAY

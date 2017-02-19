@@ -5,15 +5,15 @@ using UnityEngine.EventSystems;
 
 namespace com.Gemfile.Merger
 {
-    interface ISwipeInput
+    public interface ISwipeInput
     {
         SwipeEvent OnSwipe { get; set; }
     }
     
     [System.Serializable]
-	class SwipeEvent: UnityEvent<SwipeInfo> {}
+	public class SwipeEvent: UnityEvent<SwipeInfo> {}
 
-	class SwipeInfo 
+    public class SwipeInfo 
 	{
 		public Direction direction;
 		public Vector2 touchDelta;
@@ -21,7 +21,7 @@ namespace com.Gemfile.Merger
 		public bool hasPass;
 	}
 
-	enum Direction 
+	public enum Direction 
 	{
 		None,
 		Up, 
@@ -30,7 +30,7 @@ namespace com.Gemfile.Merger
 		Right
 	};
 
-    class SwipeInput: MonoBehaviour, ISwipeInput
+    public class SwipeInput: MonoBehaviour, ISwipeInput
 	{
         public SwipeEvent OnSwipe { 
             get { return swipeEvent; }

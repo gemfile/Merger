@@ -5,47 +5,51 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
-	interface IGameController
+	public interface IGameController
 	{
 		void Init();
+		bool IsGameOver();
+		void Move(int pivotIndex, int colOffset, int rowOffset);
+		ICardModel GetCard(int index);
 	}
 
 	public class Position
 	{
-		internal int index;
-		internal int row;
-		internal int col;
-		internal static int Cols = 1;
-		internal static int Rows = 1;
+		public int index;
+		public int row;
+		public int col;
+		public static int Cols = 1;
+		public static int Rows = 1;
 
-		internal Position(int index) 
+		public Position(int index) 
 		{
 			this.index = index;
 			row = index / Position.Cols;
 			col = index % Position.Cols;
 		}
 
-		internal Position(int pivotIndex, int colOffset, int rowOffset)
+		public Position(int pivotIndex, int colOffset, int rowOffset)
 		{
 			row = (pivotIndex / Position.Cols) + rowOffset;
 			col = (pivotIndex % Position.Cols) + colOffset;
 			index = row * Position.Cols + col;
 		}
 
-		internal bool IsAcceptableIndex() {
+		public bool IsAcceptableIndex() 
+		{
 			return col >= 0 && col < Position.Cols && row >= 0 && row < Position.Rows;
 		}
 	}
 
-	class MergingInfo
+	public class MergingInfo
 	{
-		internal Position sourcePosition;
-		internal Position targetPosition;
-		internal PlayerInfo playerInfo;
-		internal Position mergingPosition;
+		public Position sourcePosition;
+		public Position targetPosition;
+		public PlayerInfo playerInfo;
+		public Position mergingPosition;
 	}
 
-	class GameController: IGameController
+	public class GameController: IGameController
 	{
 		readonly IGameModel model;
 		readonly IGameView view;
@@ -60,6 +64,9 @@ namespace com.Gemfile.Merger
 
 		public void Init()
 		{
+			model.Init();
+			view.Init();
+
 			PrepareADeck(model.CardsData);
 			SetField();
 			MakePlayer();
@@ -82,7 +89,7 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		bool IsGameOver()
+		public bool IsGameOver()
 		{
 			return model.Player.Hp <= 0;
 		}
@@ -195,10 +202,10 @@ namespace com.Gemfile.Merger
 			}
 		}
 
-		void Move(int pivotIndex, int colOffset, int rowOffset)
+		public void Move(int pivotIndex, int colOffsetFrom, int rowOffsetFrom)
 		{
-			var inbackofPivot = new Position(pivotIndex, -colOffset, -rowOffset);
-			Debug.Log($"Move to : {pivotIndex}, {colOffset}, {rowOffset}");
+			var inbackofPivot = new Position(pivotIndex, -colOffsetFrom, -rowOffsetFrom);
+			Debug.Log($"Move to : {pivotIndex}, {colOffsetFrom}, {rowOffsetFrom}");
 			Debug.Log($"inbackofPosition : {inbackofPivot.row}, {inbackofPivot.col}");
 			if (inbackofPivot.IsAcceptableIndex())
 			{
@@ -208,7 +215,7 @@ namespace com.Gemfile.Merger
 					model.Fields[pivotIndex] = backCard;
 					model.Fields[inbackofPivot.index] = new EmptyModel();
 					view.Field.MoveField(new Position(pivotIndex), inbackofPivot);
-					Move(inbackofPivot.index, colOffset, rowOffset);
+					Move(inbackofPivot.index, colOffsetFrom, rowOffsetFrom);
 				}
 			}
 			else
@@ -243,7 +250,7 @@ namespace com.Gemfile.Merger
 			return model.PhasesOfGame[previousIndexOfPhase];
 		}
 
-		ICardModel GetCard(int index)
+		public ICardModel GetCard(int index)
 		{
 			if (index >= 0 && index < model.Fields.Count)
 			{

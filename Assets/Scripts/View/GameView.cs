@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
-	interface IGameView
+	public interface IGameView
 	{
 		void Init();
 		IFieldView Field { get; }
@@ -12,7 +12,7 @@ namespace com.Gemfile.Merger
 		void RequestCoroutine(IEnumerator coroutine);
 	}
 
-	class GameView: MonoBehaviour, IGameView
+	public class GameView: MonoBehaviour, IGameView
 	{
 		public ISwipeInput Swipe {
 			get { return swipe; }
@@ -31,8 +31,8 @@ namespace com.Gemfile.Merger
 		public void Init()
 		{
 			swipe = gameObject.AddComponent<SwipeInput>();
-			fieldView = transform.Find("FieldView").GetComponent<FieldView>() as IFieldView;
-			uiView = transform.Find("UIView").GetComponent<UIView>() as IUIView;
+			fieldView = transform.GetComponentInChildren<FieldView>();
+			uiView = transform.GetComponentInChildren<UIView>();
 
 			fieldView.Init(this);
 			uiView.Init(this);

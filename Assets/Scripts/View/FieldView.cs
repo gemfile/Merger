@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
-    interface IFieldView
+    public interface IFieldView
     {
         void Init(IGameView gameView);
         void SetField(int countOfFields);
@@ -20,19 +20,19 @@ namespace com.Gemfile.Merger
 
 	class ActionLogCache
 	{
-		internal GameObject sourceCard;
-		internal GameObject targetCard;
-		internal ActionType type;
-		internal int valueAffected;
+		public GameObject sourceCard;
+		public GameObject targetCard;
+		public ActionType type;
+		public int valueAffected;
 	}
 
     class FieldNewAdded
 	{
-		internal GameObject card;
-		internal Vector2 createdFrom;
+		public GameObject card;
+		public Vector2 createdFrom;
 	}
 
-    class FieldView : MonoBehaviour, IFieldView 
+    public class FieldView : MonoBehaviour, IFieldView 
     {
         string[] deckNames;
 		Dictionary<int, GameObject> fields;
@@ -52,7 +52,7 @@ namespace com.Gemfile.Merger
         Bounds sizeOfCard;
         GameObject player;
         
-        internal FieldView()
+        public FieldView()
         {
             deckNames = new string[] { "Deck" };
 
