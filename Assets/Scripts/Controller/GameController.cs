@@ -71,6 +71,7 @@ namespace com.Gemfile.Merger
 			SetField();
 			MakePlayer();
 			ListenToInput();
+			ListenToView();
 			view.RequestCoroutine(BeginTheGame());
 		}
 
@@ -103,26 +104,34 @@ namespace com.Gemfile.Merger
 			{
 				int playerIndex = GetIndex(model.Player);
 
-				var mergingCoordinates = new List<int[]> {
+				var wheresWannaMerge = new List<int[]> {
 					new int[2]{ -1, 0 },
 					new int[2]{ 1, 0 },
 					new int[2]{ 0, -1 },
 					new int[2]{ 0, 1 },
 				};
 
-				var canMerge = mergingCoordinates.Aggregate(false, (result, mergingCoordinate) => {
-					var nearbyPosition = new Position(playerIndex, mergingCoordinate[0], mergingCoordinate[1]);
-					if(nearbyPosition.IsAcceptableIndex()) {
+				var wheresCanMerge = new List<Position>();
+				wheresWannaMerge.ForEach(whereWannaMerge => {
+					var nearbyPosition = new Position(playerIndex, whereWannaMerge[0], whereWannaMerge[1]);
+					if (nearbyPosition.IsAcceptableIndex())
+					{
 						ICardModel nearbyCard = GetCard(nearbyPosition.index);
-						result = ( result || (nearbyCard != null && !model.Player.CantMerge(nearbyCard)) || nearbyCard is MonsterModel );
-					}
 
-					return result;
+						if (nearbyCard != null && !model.Player.CantMerge(nearbyCard))
+						{
+							wheresCanMerge.Add(nearbyPosition);
+						}
+					}
 				});
 
-				if (!canMerge) {
-					Debug.Log($"Can not merge anywhere! {!canMerge}");
-				}
+				view.Navigation.Show(playerIndex, wheresCanMerge, view.Field.Fields);
+				SetNextPhase();
+			}
+
+			if (currentPhase == PhaseOfGame.WAIT)
+			{
+
 			}
 			
 			// Fill the fields.
@@ -156,6 +165,11 @@ namespace com.Gemfile.Merger
 					}
 				}
 			});
+		}
+		
+		void ListenToView()
+		{
+			view.Field.OnSpriteCaptured += view.UI.AddCardAcquired;
 		}
 
 		void Merge(int colOffset, int rowOffset)

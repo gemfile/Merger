@@ -6,12 +6,12 @@ using UnityEngine.UI;
 
 namespace com.Gemfile.Merger
 {
-    public interface IUIView
+    public interface IUIView: IView
     {
         void UpdateCoin(int coin);
         void UpdateDeckCount(int deckCount);
         void AddCardAcquired(Sprite sprite, Vector3 size, ICardModel merged, List<ICardModel> equipments);
-        void Init(IGameView gameView);
+        void Align(Bounds backgroundBounds);
     }
 
     class UIHandCard
@@ -29,24 +29,24 @@ namespace com.Gemfile.Merger
         [SerializeField]
         RectTransform handContainer;
         List<UIHandCard> handCards;
-        IGameView gameView;
 
         public UIView()
         {
             handCards = new List<UIHandCard>();
         }
 
-        public void Init(IGameView gameView)
+        public void Init()
         {
-            this.gameView = gameView;
-
-            StartCoroutine(StartAligning());
         }
 
-        IEnumerator StartAligning()
+        public void Align(Bounds backgroundBounds)
+        {
+            StartCoroutine(StartAligning(backgroundBounds));
+        }
+
+        IEnumerator StartAligning(Bounds backgroundBounds)
         {
             yield return null;
-            Bounds backgroundBounds = gameView.Field.BackgroundBounds;
             Vector3 leftBottom = Camera.main.WorldToScreenPoint(backgroundBounds.min);
             Vector3 rightTop = Camera.main.WorldToScreenPoint(backgroundBounds.max);
             var backgroundSize = rightTop - leftBottom;

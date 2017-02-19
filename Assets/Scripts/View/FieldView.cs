@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
@@ -6,9 +7,8 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
-    public interface IFieldView
+    public interface IFieldView: IView
     {
-        void Init(IGameView gameView);
         void SetField(int countOfFields);
         void AddField(Position targetPosition, CardData cardData, Position playerPosition);
         void ShowField();
@@ -16,6 +16,8 @@ namespace com.Gemfile.Merger
         void MoveField(Position targetPosition, Position cardPosition);
         Bounds BackgroundBounds { get; }
         bool IsPlaying { get; }
+		Dictionary<int, GameObject> Fields { get; }
+		Action<Sprite, Vector3, ICardModel, List<ICardModel>> OnSpriteCaptured { get; set; }
     }
 
 	class ActionLogCache
@@ -35,6 +37,9 @@ namespace com.Gemfile.Merger
     public class FieldView : MonoBehaviour, IFieldView 
     {
         string[] deckNames;
+		public Dictionary<int, GameObject> Fields { 
+			get { return fields; }
+		}
 		Dictionary<int, GameObject> fields;
 		List<FieldNewAdded> fieldsNewAdded;
         public bool IsPlaying {
@@ -42,7 +47,6 @@ namespace com.Gemfile.Merger
 		}
         CoroutineQueue coroutineQueue;
 		readonly float GAPS_BETWEEN_CARDS;
-        IGameView gameView;
         GameObject fieldContainer;
         public Bounds BackgroundBounds {
 			get { return backgroundBounds; }
@@ -51,6 +55,8 @@ namespace com.Gemfile.Merger
 		GameObject background;
         Bounds sizeOfCard;
         GameObject player;
+
+		public Action<Sprite, Vector3, ICardModel, List<ICardModel>> OnSpriteCaptured { get; set; }
         
         public FieldView()
         {
@@ -63,10 +69,8 @@ namespace com.Gemfile.Merger
 			GAPS_BETWEEN_CARDS = 0.04f;
         }
 
-        public void Init(IGameView gameView)
+        public void Init()
         {
-            this.gameView = gameView;
-
             fieldContainer = new GameObject();
 			fieldContainer.transform.SetParent(transform);
 			fieldContainer.name = "Field";
@@ -225,7 +229,7 @@ namespace com.Gemfile.Merger
 				Screen.height / Camera.main.orthographicSize / 2
 			);
 
-			gameView.UI.AddCardAcquired(capturedSprite, size, playerInfo.merged, playerInfo.equipments);
+			OnSpriteCaptured.Invoke(capturedSprite, size, playerInfo.merged, playerInfo.equipments);
 		}
 
 		IEnumerator MoveCard(

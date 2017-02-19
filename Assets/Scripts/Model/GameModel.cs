@@ -83,7 +83,7 @@ namespace com.Gemfile.Merger
 
 			fields = new Dictionary<int, ICardModel>();
 			
-			phasesOfGame = new List<PhaseOfGame>{ PhaseOfGame.FILL, PhaseOfGame.PLAY };
+			phasesOfGame = new List<PhaseOfGame>{ PhaseOfGame.FILL, PhaseOfGame.PLAY, PhaseOfGame.WAIT };
 			currentIndexOfPhase = phasesOfGame.IndexOf(PhaseOfGame.FILL);
         }
 

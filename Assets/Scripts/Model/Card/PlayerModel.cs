@@ -33,8 +33,7 @@ namespace com.Gemfile.Merger
 
 	public enum PhaseOfGame
 	{
-		FILL = 0,
-		PLAY
+		FILL = 0, PLAY, WAIT
 	}
 
 	enum ActionType

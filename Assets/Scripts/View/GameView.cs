@@ -3,13 +3,19 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
+	public interface IView
+	{
+		void Init();
+	}
+
 	public interface IGameView
 	{
 		void Init();
+		void RequestCoroutine(IEnumerator coroutine);
 		IFieldView Field { get; }
 		ISwipeInput Swipe { get; }
 		IUIView UI { get; }
-		void RequestCoroutine(IEnumerator coroutine);
+		INavigationView Navigation { get; }
 	}
 
 	public class GameView: MonoBehaviour, IGameView
@@ -28,14 +34,23 @@ namespace com.Gemfile.Merger
 		}
 		IFieldView fieldView;
 
+		public INavigationView Navigation {
+			get { return navigationView; }
+		}
+		INavigationView navigationView;
+
 		public void Init()
 		{
-			swipe = gameObject.AddComponent<SwipeInput>();
+			swipe = gameObject.GetComponent<SwipeInput>();
 			fieldView = transform.GetComponentInChildren<FieldView>();
 			uiView = transform.GetComponentInChildren<UIView>();
+			navigationView = transform.GetComponentInChildren<NavigationView>();
 
-			fieldView.Init(this);
-			uiView.Init(this);
+			foreach (IView view in GetComponentsInChildren<IView>()) 
+			{
+				view.Init();
+			}
+			uiView.Align(Field.BackgroundBounds);
 		}
 
 		public void RequestCoroutine(IEnumerator coroutine)
