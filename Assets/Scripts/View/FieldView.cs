@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
-    public interface IFieldView: IView
+    public interface IFieldView
     {
         void SetField(int countOfFields);
         void AddField(Position targetPosition, CardData cardData, Position playerPosition);
@@ -34,7 +34,7 @@ namespace com.Gemfile.Merger
 		public Vector2 createdFrom;
 	}
 
-    public class FieldView : MonoBehaviour, IFieldView 
+    public class FieldView : BaseView, IFieldView 
     {
         string[] deckNames;
 		public Dictionary<int, GameObject> Fields { 
@@ -69,7 +69,7 @@ namespace com.Gemfile.Merger
 			GAPS_BETWEEN_CARDS = 0.04f;
         }
 
-        public void Init()
+        public override void Init()
         {
             fieldContainer = new GameObject();
 			fieldContainer.transform.SetParent(transform);
@@ -143,6 +143,13 @@ namespace com.Gemfile.Merger
 
 		void ShowCards()
 		{
+			coroutineQueue.Run(StartShow());
+		}
+
+		IEnumerator StartShow()
+		{
+			var hasTweenCompleted = false;
+
 			fieldsNewAdded.ForEach(fieldNewAdded => {
 				var card = fieldNewAdded.card;
 				var createdFrom = fieldNewAdded.createdFrom;
@@ -168,8 +175,17 @@ namespace com.Gemfile.Merger
 							SetVisibleOfChild(card, "Suit", true);
 						})
 				);
+				sequence.OnComplete(()=>{
+					hasTweenCompleted = true;
+				});
 			});
 			fieldsNewAdded.Clear();
+
+			while(!hasTweenCompleted)
+			{
+				yield return null;
+			}
+			
 		}
 
         public void MergeField(MergingInfo mergingInfo) 

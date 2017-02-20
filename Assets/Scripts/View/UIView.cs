@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace com.Gemfile.Merger
 {
-    public interface IUIView: IView
+    public interface IUIView
     {
         void UpdateCoin(int coin);
         void UpdateDeckCount(int deckCount);
@@ -20,7 +20,7 @@ namespace com.Gemfile.Merger
         internal GameObject gameObject;
     }
 
-    public class UIView: MonoBehaviour, IUIView
+    public class UIView: BaseView, IUIView
     {
         [SerializeField]
         Text coinText;
@@ -33,10 +33,6 @@ namespace com.Gemfile.Merger
         public UIView()
         {
             handCards = new List<UIHandCard>();
-        }
-
-        public void Init()
-        {
         }
 
         public void Align(Bounds backgroundBounds)

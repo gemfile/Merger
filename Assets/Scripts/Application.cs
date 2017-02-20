@@ -15,11 +15,8 @@ namespace com.Gemfile.Merger
 		{
 			ResourceCache.Load("");
 			
-			var gameModel = new GameModel();
-			var gameView = transform.GetComponentInChildren<GameView>();
-			var gameController = new GameController(gameModel, gameView);
-
-			gameController.Init();
+			var gameController = new GameController<GameModel, GameView>();
+			gameController.Init(transform.GetComponentInChildren<GameView>());
 		}
 	}
 }
