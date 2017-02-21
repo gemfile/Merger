@@ -8,13 +8,15 @@ namespace com.Gemfile.Merger
 {
 	public interface IFieldController<M, V>: IBaseController<M, V>
 	{
+		List<NavigationInfo> GetWheresCanMerge();
+		void FillEmptyFields();
 		void Move(int pivotIndex, int colOffset, int rowOffset);
 		void Merge(int colOffset, int rowOffset);
 		int GetIndex(ICardModel card);
 		ICardModel GetCard(int index);
 		void AddField(int key, ICardModel card);
 		Action<MergingInfo> OnMerged { get; set; }
-		Action OnMoved { get; set; }
+		bool IsThereEmptyModel();
 	}
 
 	public class Position
@@ -52,13 +54,18 @@ namespace com.Gemfile.Merger
 		public PlayerInfo playerInfo;
 		public Position mergingPosition;
 	}
+
+	public class NavigationInfo
+	{
+		public int sourceIndex;
+		public List<Position> wheresCanMerge;
+	}
 	
 	public class FieldController<M, V>: BaseController<M, V>, IFieldController<M, V>
 		where M: FieldModel, new()
-		where V: FieldView 
+		where V: FieldView
 	{
 		public Action<MergingInfo> OnMerged { get; set; }
-		public Action OnMoved { get; set; }
 		
 		public override void Init(V view) 
 		{
@@ -70,6 +77,58 @@ namespace com.Gemfile.Merger
 			PrepareADeck(Model.CardsData);
 			SetField();
 			MakePlayer();
+		}
+
+		public void FillEmptyFields()
+		{
+			Debug.Log("FillEmptyFields");
+			var emptyFields = Model.Fields.Where(field => field.Value is EmptyModel).ToDictionary(p => p.Key, p => p.Value);
+			emptyFields.ForEach(emptyField => {
+				AddField(emptyField.Key, Model.DeckQueue.Dequeue());
+			});
+			View.ShowField();
+		}
+
+		public bool IsThereEmptyModel()
+		{
+			return Model.Fields.Values.Any(field => field is EmptyModel);
+		}
+
+		public List<NavigationInfo> GetWheresCanMerge()
+		{
+			var wheresWannaMerge = new List<int[]> {
+				new int[2]{ -1, 0 },
+				new int[2]{ 1, 0 },
+				new int[2]{ 0, -1 },
+				new int[2]{ 0, 1 },
+			};
+
+			var navigationInfos = new List<NavigationInfo>();
+
+			var mergers = Model.Fields.Where(field => field.Value is IMerger).ToDictionary(p => p.Key, p => p.Value);
+			mergers.ForEach((merger) => {
+				int sourceIndex = merger.Key;
+				var wheresCanMerge = new List<Position>();
+
+				wheresWannaMerge.ForEach(whereWannaMerge => {
+					var nearbyPosition = new Position(sourceIndex, whereWannaMerge[0], whereWannaMerge[1]);
+					if (nearbyPosition.IsAcceptableIndex())
+					{
+						ICardModel nearbyCard = GetCard(nearbyPosition.index);
+						if (nearbyCard != null && !(merger.Value as IMerger).CantMerge(nearbyCard))
+						{
+							wheresCanMerge.Add(nearbyPosition);
+						}
+					}
+				});
+
+				navigationInfos.Add(new NavigationInfo {
+					sourceIndex = merger.Key,
+					wheresCanMerge = wheresCanMerge
+				});
+			});
+
+			return navigationInfos;
 		}
 
 		public void Merge(int colOffset, int rowOffset)
@@ -131,10 +190,6 @@ namespace com.Gemfile.Merger
 					View.MoveField(new Position(pivotIndex), inbackofPivot);
 					Move(inbackofPivot.index, colOffsetFrom, rowOffsetFrom);
 				}
-			}
-			else
-			{
-				OnMoved.Invoke();
 			}
 		}
 

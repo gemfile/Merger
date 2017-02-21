@@ -13,5 +13,10 @@ namespace com.Gemfile.Merger
         {
             return (player as IMerger).Merge(this, playerPosition, cardPosition, false);
         }
+
+        public bool CantMerge(ICardModel target)
+        {
+            return !(target is IPlayerModel);
+        }
     }
 }

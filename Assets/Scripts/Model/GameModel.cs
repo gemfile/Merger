@@ -22,10 +22,9 @@ namespace com.Gemfile.Merger
 		}
         int currentIndexOfPhase;
 
-        
         public GameModel()
         {
-            phasesOfGame = new List<PhaseOfGame>{ PhaseOfGame.FILL, PhaseOfGame.PLAY, PhaseOfGame.WAIT };
+            phasesOfGame = new List<PhaseOfGame>{ PhaseOfGame.FILL, PhaseOfGame.WAIT, PhaseOfGame.PLAY };
 			currentIndexOfPhase = phasesOfGame.IndexOf(PhaseOfGame.FILL);
         }
 

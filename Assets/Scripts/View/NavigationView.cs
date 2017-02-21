@@ -6,7 +6,8 @@ namespace com.Gemfile.Merger
 {
 	public interface INavigationView: IBaseView
 	{
-		void Show(int sourceIndex, List<Position> wheresCanMerge, Dictionary<int, GameObject> fields);
+		void Show(List<NavigationInfo> navigationInfos, Dictionary<int, GameObject> fields);
+		void Hide();
 	}
 	
 	public class NavigationView: BaseView, INavigationView
@@ -16,31 +17,49 @@ namespace com.Gemfile.Merger
 		[SerializeField]
 		Texture2D frontTexture;
 		
+		List<VectorLine> vectorLines;
+
+		public NavigationView()
+		{
+			vectorLines = new List<VectorLine>();
+		}
+		
 		public override void Init()
 		{
 			VectorLine.SetEndCap ("Arrow", EndCap.Front, -1, lineTexture, frontTexture);
 		}
 
-		public void Show(int sourceIndex, List<Position> wheresCanMerge, Dictionary<int, GameObject> fields)
+		public void Show(List<NavigationInfo> navigationInfos, Dictionary<int, GameObject> fields)
 		{
-			wheresCanMerge.ForEach(whereCanMerge => {
-				var linePoints = new List<Vector2>() {
-					Camera.main.WorldToScreenPoint(fields[whereCanMerge.index].transform.position),
-					Camera.main.WorldToScreenPoint(fields[sourceIndex].transform.position),
-				};
-				var myLine = new VectorLine("Line", linePoints, 90.0f, LineType.Continuous);
-				myLine.rectTransform.SetParent(transform);
-				myLine.endCap = "Arrow";
+			navigationInfos.ForEach(navigationInfo => {
+				var sourceIndex = navigationInfo.sourceIndex;
+				var wheresCanMerge = navigationInfo.wheresCanMerge;
 
-				var myColors = new List<Color32>() {
-					Color.red,
-				}; 
-				myLine.smoothColor = true;
-				myLine.SetColors (myColors);
+				wheresCanMerge.ForEach(whereCanMerge => {
+					var linePoints = new List<Vector2>() {
+						Camera.main.WorldToScreenPoint(fields[whereCanMerge.index].transform.position),
+						Camera.main.WorldToScreenPoint(fields[sourceIndex].transform.position),
+					};
+					var myLine = new VectorLine("Line", linePoints, 90.0f, LineType.Continuous);
+					myLine.rectTransform.SetParent(transform);
+					myLine.endCap = "Arrow";
 
-				myLine.Draw();
+					var myColors = new List<Color32>() {
+						Color.red,
+					}; 
+					myLine.smoothColor = true;
+					myLine.SetColors (myColors);
+
+					myLine.Draw();
+					vectorLines.Add(myLine);
+				});
 			});
 		}
 
+		public void Hide()
+		{
+			VectorLine.Destroy(vectorLines);
+			vectorLines.Clear();
+		}
 	}
 }

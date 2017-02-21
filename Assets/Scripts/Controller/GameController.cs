@@ -1,6 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace com.Gemfile.Merger
@@ -19,6 +19,12 @@ namespace com.Gemfile.Merger
 			get { return field; }
 		}
 		IFieldController<FieldModel, FieldView> field;
+		Queue<Action> commands;
+		
+		public GameController()
+		{
+			commands = new Queue<Action>();
+		}
 		
 		public override void Init(V view)
 		{
@@ -58,56 +64,32 @@ namespace com.Gemfile.Merger
 		void Watch()
 		{
 			var currentPhase = GetCurrentPhase();
-			var fieldModel = field.Model;
-			if (!View.Field.IsPlaying && currentPhase == PhaseOfGame.PLAY)
+			Debug.Log("currentPhase : " + currentPhase);
+			switch(currentPhase)
 			{
-				int playerIndex = field.GetIndex(fieldModel.Player);
-
-				var wheresWannaMerge = new List<int[]> {
-					new int[2]{ -1, 0 },
-					new int[2]{ 1, 0 },
-					new int[2]{ 0, -1 },
-					new int[2]{ 0, 1 },
-				};
-
-				var wheresCanMerge = new List<Position>();
-				wheresWannaMerge.ForEach(whereWannaMerge => {
-					var nearbyPosition = new Position(playerIndex, whereWannaMerge[0], whereWannaMerge[1]);
-					if (nearbyPosition.IsAcceptableIndex())
-					{
-						ICardModel nearbyCard = field.GetCard(nearbyPosition.index);
-						if (nearbyCard != null && !fieldModel.Player.CantMerge(nearbyCard))
-						{
-							wheresCanMerge.Add(nearbyPosition);
-						}
+				case PhaseOfGame.PLAY:
+					if (commands.Count > 0) {
+						Action command = commands.Dequeue();
+						command.Invoke();
+						SetNextPhase();
 					}
-				});
+					break;
 
-				View.Navigation.Show(playerIndex, wheresCanMerge, View.Field.Fields);
-				SetNextPhase();
-			}
+				case PhaseOfGame.WAIT:
+					if (!View.Field.IsPlaying) {
+						View.Navigation.Show(field.GetWheresCanMerge(), View.Field.Fields);
+						SetNextPhase();
+					}
+					break;
 
-			if (currentPhase == PhaseOfGame.WAIT)
-			{
-
-			}
-			
-			// Fill the fields.
-			if (currentPhase == PhaseOfGame.FILL && fieldModel.Fields.Values.Any(field => field is EmptyModel))
-			{
-				var emptyFields = fieldModel.Fields.Where(field => field.Value is EmptyModel).ToDictionary(p => p.Key, p => p.Value);
-				emptyFields.ForEach(emptyField => {
-					field.AddField(emptyField.Key, fieldModel.DeckQueue.Dequeue());
-				});
-
-				Debug.Log("=== Choose the card ===");
-				int count = 0;
-				fieldModel.Fields.ForEach(iCardModel => Debug.Log(iCardModel.Value.Data.type + ", " + iCardModel.Value.Data.value + ", " + count++));
-				Debug.Log("===============");
-
-				View.Field.ShowField();
-				View.UI.UpdateDeckCount(fieldModel.DeckQueue.Count);
-				SetNextPhase();
+				case PhaseOfGame.FILL:
+					if (field.IsThereEmptyModel()) {
+						View.Navigation.Hide();
+						field.FillEmptyFields();
+						View.UI.UpdateDeckCount(field.Model.DeckQueue.Count);
+						SetNextPhase();
+					}
+					break;
 			}
 		}
 
@@ -116,10 +98,18 @@ namespace com.Gemfile.Merger
 			View.Swipe.OnSwipe.AddListener(swipeInfo => {
 				if(!View.Field.IsPlaying) {
 					switch(swipeInfo.direction) {
-						case Direction.Right: field.Merge(1, 0); break;
-						case Direction.Left: field.Merge(-1, 0); break;
-						case Direction.Up: field.Merge(0, 1); break;
-						case Direction.Down: field.Merge(0, -1); break;
+						case Direction.Right: 
+							commands.Enqueue(() => field.Merge(1, 0));
+							break;
+						case Direction.Left: 
+							commands.Enqueue(() => field.Merge(-1, 0));
+						 	break;
+						case Direction.Up: 
+							commands.Enqueue(() => field.Merge(0, 1));
+						 	break;
+						case Direction.Down: 
+							commands.Enqueue(() => field.Merge(0, -1));
+						 	break;
 					}
 				}
 			});
@@ -134,9 +124,6 @@ namespace com.Gemfile.Merger
 		{
 			Field.OnMerged += (MergingInfo mergingInfo) => {
 				view.UI.UpdateCoin(mergingInfo.playerInfo.coin);
-			};
-			Field.OnMoved += () => {
-				SetNextPhase();
 			};
 		}
 
