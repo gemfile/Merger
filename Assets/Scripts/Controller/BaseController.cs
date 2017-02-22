@@ -4,6 +4,7 @@ namespace com.Gemfile.Merger
     {
         void Init(V view);
         M Model { get; }
+        void Clear();
     }
     
     public class BaseController<M, V>
@@ -25,6 +26,10 @@ namespace com.Gemfile.Merger
             
             model.Init();
             view.Init();
+        }
+
+        public virtual void Clear() {
+            
         }
     }
 }

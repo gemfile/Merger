@@ -7305,7 +7305,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lineTexture: {fileID: 2800000, guid: 1861741516dd24df594d4057b36b4f44, type: 3}
-  frontTexture: {fileID: 2800000, guid: 0df0aa1a9c75a4991bb772b99696ae2f, type: 3}
+  frontTexture: {fileID: 2800000, guid: 4f2786ef39d9b487eaae5ceb15ea25f6, type: 3}
 --- !u!114 &114940870437093430
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -14589,7 +14589,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000013291836, y: -0.000015258789}
+  m_AnchoredPosition: {x: -0.000013291836, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!224 &224537789319599660

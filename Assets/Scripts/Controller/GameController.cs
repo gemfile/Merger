@@ -19,11 +19,11 @@ namespace com.Gemfile.Merger
 			get { return field; }
 		}
 		IFieldController<FieldModel, FieldView> field;
-		Queue<Action> commands;
+		Queue<Func<bool>> commands;
 		
 		public GameController()
 		{
-			commands = new Queue<Action>();
+			commands = new Queue<Func<bool>>();
 		}
 		
 		public override void Init(V view)
@@ -39,6 +39,15 @@ namespace com.Gemfile.Merger
 			ListenToView();
 			ListenToLogic();
 			View.RequestCoroutine(BeginTheGame());
+		}
+
+		public override void Clear()
+		{
+			View.Swipe.OnSwipeEnd.RemoveAllListeners();
+			View.Swipe.OnSwipeMove.RemoveAllListeners();
+			View.Swipe.OnSwipeCancel.RemoveAllListeners();
+			View.Field.OnSpriteCaptured.RemoveAllListeners();
+			Field.OnMerged.RemoveAllListeners();
 		}
 
 		IEnumerator BeginTheGame() 
@@ -63,28 +72,33 @@ namespace com.Gemfile.Merger
 
 		void Watch()
 		{
-			var currentPhase = GetCurrentPhase();
-			Debug.Log("currentPhase : " + currentPhase);
-			switch(currentPhase)
+			switch(GetCurrentPhase())
 			{
 				case PhaseOfGame.PLAY:
 					if (commands.Count > 0) {
-						Action command = commands.Dequeue();
-						command.Invoke();
-						SetNextPhase();
+						Func<bool> command = commands.Dequeue();
+						var succeeded = command.Invoke();
+						if (succeeded) {
+							SetNextPhase();
+						} else {
+							View.Field.HighlightCards(
+								View.Navigation.Set(field.GetWheresCanMerge(), View.Field.Fields, View.Field.CardBounds)
+							);
+						}
 					}
 					break;
 
 				case PhaseOfGame.WAIT:
 					if (!View.Field.IsPlaying) {
-						View.Navigation.Show(field.GetWheresCanMerge(), View.Field.Fields);
+						View.Field.HighlightCards(
+							View.Navigation.Set(field.GetWheresCanMerge(), View.Field.Fields, View.Field.CardBounds)
+						);
 						SetNextPhase();
 					}
 					break;
 
 				case PhaseOfGame.FILL:
 					if (field.IsThereEmptyModel()) {
-						View.Navigation.Hide();
 						field.FillEmptyFields();
 						View.UI.UpdateDeckCount(field.Model.DeckQueue.Count);
 						SetNextPhase();
@@ -95,8 +109,10 @@ namespace com.Gemfile.Merger
 
 		void ListenToInput()
 		{
-			View.Swipe.OnSwipe.AddListener(swipeInfo => {
+			View.Swipe.OnSwipeEnd.AddListener(swipeInfo => {
 				if(!View.Field.IsPlaying) {
+					View.Navigation.Clear();
+					View.Field.Dehighlight();
 					switch(swipeInfo.direction) {
 						case Direction.Right: 
 							commands.Enqueue(() => field.Merge(1, 0));
@@ -113,18 +129,30 @@ namespace com.Gemfile.Merger
 					}
 				}
 			});
+
+			View.Swipe.OnSwipeMove.AddListener(swipeInfo => {
+				if(!View.Field.IsPlaying) {
+					View.Navigation.Show(swipeInfo.touchDeltaFirst, swipeInfo.touchDelta);
+				}
+			});
+
+			View.Swipe.OnSwipeCancel.AddListener(swipeInfo => {
+				if(!View.Field.IsPlaying) {
+					View.Navigation.Hide();
+				}
+			});
 		}
 		
 		void ListenToView()
 		{
-			View.Field.OnSpriteCaptured += View.UI.AddCardAcquired;
+			View.Field.OnSpriteCaptured.AddListener(View.UI.AddCardAcquired);
 		}
 
 		void ListenToLogic()
 		{
-			Field.OnMerged += (MergingInfo mergingInfo) => {
+			Field.OnMerged.AddListener(mergingInfo => {
 				view.UI.UpdateCoin(mergingInfo.playerInfo.coin);
-			};
+			});
 		}
 
 		void SetNextPhase()
@@ -140,17 +168,6 @@ namespace com.Gemfile.Merger
 		PhaseOfGame GetCurrentPhase()
 		{
 			return Model.PhasesOfGame[Model.CurrentIndexOfPhase];
-		}
-
-		PhaseOfGame GetPreviousPhase()
-		{
-			var previousIndexOfPhase = Model.CurrentIndexOfPhase - 1;
-			if (previousIndexOfPhase < 0)
-			{
-				previousIndexOfPhase = Model.PhasesOfGame.Count - 1;
-			}
-
-			return Model.PhasesOfGame[previousIndexOfPhase];
 		}
 	}
 }

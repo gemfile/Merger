@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
@@ -11,13 +12,15 @@ namespace com.Gemfile.Merger
 		List<NavigationInfo> GetWheresCanMerge();
 		void FillEmptyFields();
 		void Move(int pivotIndex, int colOffset, int rowOffset);
-		void Merge(int colOffset, int rowOffset);
+		bool Merge(int colOffset, int rowOffset);
 		int GetIndex(ICardModel card);
 		ICardModel GetCard(int index);
 		void AddField(int key, ICardModel card);
-		Action<MergingInfo> OnMerged { get; set; }
+		MergingEvent OnMerged { get; }
 		bool IsThereEmptyModel();
 	}
+
+	public class MergingEvent: UnityEvent<MergingInfo> {}
 
 	public class Position
 	{
@@ -65,7 +68,8 @@ namespace com.Gemfile.Merger
 		where M: FieldModel, new()
 		where V: FieldView
 	{
-		public Action<MergingInfo> OnMerged { get; set; }
+		public MergingEvent OnMerged { get { return onMerged; } } 
+		readonly MergingEvent onMerged = new MergingEvent();
 		
 		public override void Init(V view) 
 		{
@@ -131,8 +135,10 @@ namespace com.Gemfile.Merger
 			return navigationInfos;
 		}
 
-		public void Merge(int colOffset, int rowOffset)
+		public bool Merge(int colOffset, int rowOffset)
 		{
+			var isMerged = false;
+			
 			var playerIndex = GetIndex(Model.Player);
 			var playerPosition = new Position(playerIndex);
 			var infrontofPlayer = new Position(playerIndex, colOffset, rowOffset);
@@ -157,6 +163,7 @@ namespace com.Gemfile.Merger
 				View.MergeField(mergingInfo);
 				OnMerged.Invoke(mergingInfo);
 				Move(playerIndex, colOffset, rowOffset);
+				isMerged = true;
 			}
 			else if (inbackofPlayer.IsAcceptableIndex() && backMonsterCard != null)
 			{
@@ -172,7 +179,10 @@ namespace com.Gemfile.Merger
 				View.MergeField(mergingInfo);
 				OnMerged.Invoke(mergingInfo);
 				Move(inbackofPlayer.index, colOffset, rowOffset);
+				isMerged = true;
 			}
+
+			return isMerged;
 		}
 
 		public void Move(int pivotIndex, int colOffsetFrom, int rowOffsetFrom)

@@ -1,24 +1,29 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
     public interface IFieldView
     {
+		void Dehighlight();
+		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);
         void SetField(int countOfFields);
         void AddField(Position targetPosition, CardData cardData, Position playerPosition);
         void ShowField();
         void MergeField(MergingInfo mergingInfo);
         void MoveField(Position targetPosition, Position cardPosition);
         Bounds BackgroundBounds { get; }
+        Bounds CardBounds { get; }
         bool IsPlaying { get; }
 		Dictionary<int, GameObject> Fields { get; }
-		Action<Sprite, Vector3, ICardModel, List<ICardModel>> OnSpriteCaptured { get; set; }
+		SpriteCaptureEvent OnSpriteCaptured { get; }
     }
+
+	public class SpriteCaptureEvent: UnityEvent<Sprite, Vector3, ICardModel, List<ICardModel>> {}
 
 	class ActionLogCache
 	{
@@ -53,10 +58,14 @@ namespace com.Gemfile.Merger
 		}
 		Bounds backgroundBounds;
 		GameObject background;
-        Bounds sizeOfCard;
+		public Bounds CardBounds {
+			get { return cardBounds; }
+		}
+        Bounds cardBounds;
         GameObject player;
 
-		public Action<Sprite, Vector3, ICardModel, List<ICardModel>> OnSpriteCaptured { get; set; }
+		public SpriteCaptureEvent OnSpriteCaptured { get { return onSpriteCaptured; } }
+		readonly SpriteCaptureEvent onSpriteCaptured = new SpriteCaptureEvent();
         
         public FieldView()
         {
@@ -79,6 +88,21 @@ namespace com.Gemfile.Merger
 			backgroundBounds = background.GetBounds();
         }
 
+		public void HighlightCards(List<NavigationColorInfo> navigationColorInfos)
+		{
+			navigationColorInfos.ForEach(navigationColorInfo => {
+				var card = fields[navigationColorInfo.index];
+				Highlight(card, true, navigationColorInfo.color);
+			});
+		}
+
+		public void Dehighlight()
+		{
+			fields.ForEach(card => {
+				Highlight(card.Value, false);
+			});
+		}
+
         public void SetField(int countOfFields)
 		{
 			Enumerable.Range(0, countOfFields).ForEach(index => fields.Add(index, null));
@@ -92,7 +116,7 @@ namespace com.Gemfile.Merger
 
 			var deck = ResourceCache.Instantiate(deckNames[UnityEngine.Random.Range(0, 1)], transform);
 			deck.transform.SetParent(card.transform);
-			sizeOfCard = card.GetBounds();
+			cardBounds = card.GetBounds();
 			SetValue(card, "Name", cardData.cardName);
 			SetValue(card, "Value", cardData.value.ToString());
 			SetVisibleOfChild(card, "Mask", false);
@@ -102,8 +126,8 @@ namespace com.Gemfile.Merger
 			cardResource.transform.SetParent(card.transform);
 			
 			card.transform.localPosition = new Vector2(
-				(sizeOfCard.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col, 
-				(sizeOfCard.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
+				(cardBounds.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col, 
+				(cardBounds.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
 			);
 			fields[targetPosition.index] = card;
 			fieldsNewAdded.Add(new FieldNewAdded() {
@@ -245,7 +269,7 @@ namespace com.Gemfile.Merger
 				Screen.height / Camera.main.orthographicSize / 2
 			);
 
-			OnSpriteCaptured.Invoke(capturedSprite, size, playerInfo.merged, playerInfo.equipments);
+			onSpriteCaptured.Invoke(capturedSprite, size, playerInfo.merged, playerInfo.equipments);
 		}
 
 		IEnumerator MoveCard(
@@ -340,8 +364,8 @@ namespace com.Gemfile.Merger
 		{
 			var movingCard = fields[cardPosition.index];
 			var targetLocalPosition = new Vector2(
-				(sizeOfCard.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col,
-				(sizeOfCard.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
+				(cardBounds.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col,
+				(cardBounds.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
 			);
 			Debug.Log("StartMoving : " + cardPosition.index + ", " + movingCard.name);
 
@@ -356,6 +380,13 @@ namespace com.Gemfile.Merger
         void SetValue(GameObject targetCard, string key, string value)
 		{
 			targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>().text = value;
+		}
+
+		void Highlight(GameObject targetCard, bool visible, Color32 color = default(Color32))
+		{
+			var spriteOutline = targetCard.transform.GetChild(0).Find("Background").GetComponent<SpriteOutline>();
+			spriteOutline.enabled = visible;
+			spriteOutline.color = color;
 		}
 
 		void SetVisibleOfChild(GameObject targetCard, string key, bool visible)
@@ -468,13 +499,12 @@ namespace com.Gemfile.Merger
 			return targetCard.transform.GetChild(0).Find(key).GetComponent<TextMesh>();
 		}
 
-
 		void AlignFields()
 		{
 			var sizeOfField = fieldContainer.GetBounds();
 			fieldContainer.transform.localPosition = new Vector3(
-				(sizeOfCard.size.x - sizeOfField.size.x) / 2, 
-				(sizeOfCard.size.y - sizeOfField.size.y) / 2, 
+				(cardBounds.size.x - sizeOfField.size.x) / 2, 
+				(cardBounds.size.y - sizeOfField.size.y) / 2, 
 				fieldContainer.transform.localPosition.z
 			);
 		}
