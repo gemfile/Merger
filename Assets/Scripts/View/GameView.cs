@@ -1,18 +1,17 @@
 ﻿using System.Collections;
-using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
 	public interface IGameView
 	{
-		void Init();
+		void RequestCoroutine(IEnumerator coroutine);
 		IFieldView Field { get; }
 		ISwipeInput Swipe { get; }
 		IUIView UI { get; }
-		void RequestCoroutine(IEnumerator coroutine);
+		INavigationView Navigation { get; }
 	}
 
-	public class GameView: MonoBehaviour, IGameView
+	public class GameView: BaseView, IGameView
 	{
 		public ISwipeInput Swipe {
 			get { return swipe; }
@@ -28,14 +27,18 @@ namespace com.Gemfile.Merger
 		}
 		IFieldView fieldView;
 
-		public void Init()
+		public INavigationView Navigation {
+			get { return navigationView; }
+		}
+		INavigationView navigationView;
+
+		public override void Init()
 		{
-			swipe = gameObject.AddComponent<SwipeInput>();
+			swipe = gameObject.GetComponent<SwipeInput>();
 			fieldView = transform.GetComponentInChildren<FieldView>();
 			uiView = transform.GetComponentInChildren<UIView>();
-
-			fieldView.Init(this);
-			uiView.Init(this);
+			navigationView = transform.GetComponentInChildren<NavigationView>();
+			navigationView.Init();
 		}
 
 		public void RequestCoroutine(IEnumerator coroutine)

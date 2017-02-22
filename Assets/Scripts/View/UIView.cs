@@ -11,7 +11,7 @@ namespace com.Gemfile.Merger
         void UpdateCoin(int coin);
         void UpdateDeckCount(int deckCount);
         void AddCardAcquired(Sprite sprite, Vector3 size, ICardModel merged, List<ICardModel> equipments);
-        void Init(IGameView gameView);
+        void Align(Bounds backgroundBounds);
     }
 
     class UIHandCard
@@ -20,7 +20,7 @@ namespace com.Gemfile.Merger
         internal GameObject gameObject;
     }
 
-    public class UIView: MonoBehaviour, IUIView
+    public class UIView: BaseView, IUIView
     {
         [SerializeField]
         Text coinText;
@@ -29,24 +29,20 @@ namespace com.Gemfile.Merger
         [SerializeField]
         RectTransform handContainer;
         List<UIHandCard> handCards;
-        IGameView gameView;
 
         public UIView()
         {
             handCards = new List<UIHandCard>();
         }
 
-        public void Init(IGameView gameView)
+        public void Align(Bounds backgroundBounds)
         {
-            this.gameView = gameView;
-
-            StartCoroutine(StartAligning());
+            StartCoroutine(StartAligning(backgroundBounds));
         }
 
-        IEnumerator StartAligning()
+        IEnumerator StartAligning(Bounds backgroundBounds)
         {
             yield return null;
-            Bounds backgroundBounds = gameView.Field.BackgroundBounds;
             Vector3 leftBottom = Camera.main.WorldToScreenPoint(backgroundBounds.min);
             Vector3 rightTop = Camera.main.WorldToScreenPoint(backgroundBounds.max);
             var backgroundSize = rightTop - leftBottom;

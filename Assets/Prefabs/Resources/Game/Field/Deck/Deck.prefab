@@ -264,6 +264,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4733409660486294}
   - component: {fileID: 212163025947259020}
+  - component: {fileID: 114596404436587814}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -842,6 +843,19 @@ TextMesh:
   m_Color:
     serializedVersion: 2
     rgba: 4278190080
+--- !u!114 &114596404436587814
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1720641725226460}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60d6781cf05064a5c973c11ea35c3dc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  color: {r: 1, g: 1, b: 1, a: 1}
+  outlineSize: 1
 --- !u!212 &212096396682644700
 SpriteRenderer:
   m_ObjectHideFlags: 1
@@ -960,7 +974,7 @@ SpriteRenderer:
   m_LightProbeUsage: 0
   m_ReflectionProbeUsage: 0
   m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 558f224d134374b919e0aa67f08dd306, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

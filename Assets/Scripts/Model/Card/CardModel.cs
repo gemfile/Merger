@@ -5,7 +5,6 @@ namespace com.Gemfile.Merger
 		CardData Data {
 			get;
 		}
-		bool CantMerge(ICardModel target);
 	}
 	
     public class CardModel: ICardModel
@@ -19,11 +18,6 @@ namespace com.Gemfile.Merger
 			get { return data; }
 		}
 		readonly CardData data;
-
-		public virtual bool CantMerge(ICardModel target)
-		{
-			return false;
-		}
     }
 
 	class EmptyModel: CardModel

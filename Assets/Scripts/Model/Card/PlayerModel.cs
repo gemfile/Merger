@@ -18,6 +18,8 @@ namespace com.Gemfile.Merger
 			Position cardPosition, 
 			bool canUseWeapon = true
 		);
+
+		bool CantMerge(ICardModel target);
 	}
 
 	public class PlayerInfo 
@@ -33,8 +35,7 @@ namespace com.Gemfile.Merger
 
 	public enum PhaseOfGame
 	{
-		FILL = 0,
-		PLAY
+		FILL = 0, PLAY, WAIT
 	}
 
 	enum ActionType
@@ -75,7 +76,7 @@ namespace com.Gemfile.Merger
 			weapon = null;
 		}
 
-		public override bool CantMerge(ICardModel target)
+		public bool CantMerge(ICardModel target)
         {
             return (
 				target is EmptyModel ||
