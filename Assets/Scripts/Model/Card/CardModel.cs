@@ -7,6 +7,18 @@ namespace com.Gemfile.Merger
 		}
 	}
 	
+	interface IMerger
+	{
+		PlayerInfo Merge(
+			ICardModel card, 
+			Position playerPosition, 
+			Position cardPosition, 
+			bool canUseWeapon = true
+		);
+
+		bool CantMerge(ICardModel target);
+	}
+
     public class CardModel: ICardModel
     {
 		public CardModel(CardData cardData) 

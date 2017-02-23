@@ -7,7 +7,7 @@ namespace com.Gemfile.Merger
 	{
 		static readonly Dictionary<string, GameObject> cache = new Dictionary<string, GameObject>();
 
-		static public void Load(string path) 
+		static public void LoadAll(string path) 
 		{
 			Resources.LoadAll(path, typeof(GameObject)).ForEach(resource => {
 				cache[resource.name] = (GameObject)resource;

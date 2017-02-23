@@ -7,7 +7,7 @@ public class GameControllerTests
 	public void IsGameOverTest() 
 	{
 		//Arrange
-		ResourceCache.Load("");
+		ResourceCache.LoadAll("GameScene");
 		var mockOfGameView = ResourceCache.Instantiate("GameView");
 
 		var gameView = mockOfGameView.transform.GetComponentInChildren<GameView>();
@@ -30,7 +30,7 @@ public class GameControllerTests
 	[Test]
 	public void MoveTest() {
 		//Arrange
-		ResourceCache.Load("");
+		ResourceCache.LoadAll("GameScenes");
 		var mockOfGameView = ResourceCache.Instantiate("GameView");
 
 		var gameView = mockOfGameView.transform.GetComponentInChildren<GameView>();
