@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
@@ -11,7 +9,7 @@ namespace com.Gemfile.Merger
 	{
 		List<NavigationInfo> GetWheresCanMerge();
 		void FillEmptyFields();
-		void Move(int pivotIndex, int colOffset, int rowOffset);
+		void Move(int targetIndex, int colFrom, int rowFrom);
 		bool Merge(int colOffset, int rowOffset);
 		int GetIndex(ICardModel card);
 		ICardModel GetCard(int index);
@@ -185,20 +183,20 @@ namespace com.Gemfile.Merger
 			return isMerged;
 		}
 
-		public void Move(int pivotIndex, int colOffsetFrom, int rowOffsetFrom)
+		public void Move(int targetIndex, int colFrom, int rowFrom)
 		{
-			var inbackofPivot = new Position(pivotIndex, -colOffsetFrom, -rowOffsetFrom);
-			Debug.Log($"Move to : {pivotIndex}, {colOffsetFrom}, {rowOffsetFrom}");
-			Debug.Log($"inbackofPosition : {inbackofPivot.row}, {inbackofPivot.col}");
-			if (inbackofPivot.IsAcceptableIndex())
+			var inbackofTarget = new Position(targetIndex, -colFrom, -rowFrom);
+			Debug.Log($"Move to : {targetIndex}, {colFrom}, {rowFrom}");
+			Debug.Log($"inbackofPosition : {inbackofTarget.row}, {inbackofTarget.col}");
+			if (inbackofTarget.IsAcceptableIndex())
 			{
-				ICardModel backCard = GetCard(inbackofPivot.index);
+				ICardModel backCard = GetCard(inbackofTarget.index);
 				if (backCard != null)
 				{
-					Model.Fields[pivotIndex] = backCard;
-					Model.Fields[inbackofPivot.index] = new EmptyModel();
-					View.MoveField(new Position(pivotIndex), inbackofPivot);
-					Move(inbackofPivot.index, colOffsetFrom, rowOffsetFrom);
+					Model.Fields[targetIndex] = backCard;
+					Model.Fields[inbackofTarget.index] = new EmptyModel();
+					View.MoveField(new Position(targetIndex), inbackofTarget);
+					Move(inbackofTarget.index, colFrom, rowFrom);
 				}
 			}
 		}
