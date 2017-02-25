@@ -11,7 +11,7 @@ public class LoadingCover: MonoBehaviour
 	[SerializeField]
 	CanvasGroup canvasGroup;
 	[SerializeField]
-	Slider slider;
+	bl_ProgressBar progressBar;
 	
 	public IEnumerator Show(string text) 
 	{
@@ -30,7 +30,7 @@ public class LoadingCover: MonoBehaviour
 
 	public IEnumerator Progress(float progress)
     {
-		slider.value = progress;
+		progressBar.Value = progress * 100;
         yield return null;
     }
 }

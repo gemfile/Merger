@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace com.Gemfile.Merger
@@ -12,6 +13,7 @@ namespace com.Gemfile.Merger
         void UpdateDeckCount(int deckCount);
         void AddCardAcquired(Sprite sprite, Vector3 size, ICardModel merged, List<ICardModel> equipments);
         void Align(Bounds backgroundBounds);
+        void SuggestRetry(UnityAction callback);
     }
 
     class UIHandCard
@@ -29,6 +31,8 @@ namespace com.Gemfile.Merger
         [SerializeField]
         RectTransform handContainer;
         List<UIHandCard> handCards;
+        [SerializeField]
+        ModalPanel modalPanel;
 
         public UIView()
         {
@@ -97,6 +101,11 @@ namespace com.Gemfile.Merger
         public void UpdateDeckCount(int deckCount)
         {
             deckCountText.text = deckCount.ToString();
+        }
+
+        public void SuggestRetry(UnityAction callback)
+        {
+            modalPanel.Choice(callback);
         }
     }
 }

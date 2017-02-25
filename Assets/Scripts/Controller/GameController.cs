@@ -41,6 +41,20 @@ namespace com.Gemfile.Merger
 			View.RequestCoroutine(BeginTheGame());
 		}
 
+		void Reset()
+		{
+			View.RequestCoroutine(StartReset());
+		}
+
+		IEnumerator StartReset()
+		{
+			Clear();
+			yield return null;
+			View.Reset();
+			yield return new WaitForSeconds(0.4f);
+			Init(View);
+		}
+
 		public override void Clear()
 		{
 			View.Swipe.OnSwipeEnd.RemoveAllListeners();
@@ -56,8 +70,10 @@ namespace com.Gemfile.Merger
 			{
 				Watch();
 
-				if (IsGameOver()) {
-					Debug.Log("=== The game is over! ===");
+				if (!View.Field.IsPlaying && IsGameOver()) {
+					View.UI.SuggestRetry(() => {
+						Reset();
+					});
 					yield break;
 				}
 

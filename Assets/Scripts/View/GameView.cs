@@ -2,14 +2,15 @@
 
 namespace com.Gemfile.Merger
 {
-	public interface IGameView: IBaseView
+	public interface IGameView
 	{
 		void RequestCoroutine(IEnumerator coroutine);
 		IFieldView Field { get; }
 		ISwipeInput Swipe { get; }
 		IUIView UI { get; }
 		INavigationView Navigation { get; }
-    }
+		void Reset();
+	}
 
 	public class GameView: BaseView, IGameView
 	{
@@ -39,6 +40,11 @@ namespace com.Gemfile.Merger
 			uiView = transform.GetComponentInChildren<UIView>();
 			navigationView = transform.GetComponentInChildren<NavigationView>();
 			navigationView.Init();
+		}
+
+		public void Reset()
+		{
+			fieldView.Reset();
 		}
 
 		public void RequestCoroutine(IEnumerator coroutine)

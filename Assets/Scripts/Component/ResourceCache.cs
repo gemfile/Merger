@@ -21,7 +21,7 @@ namespace com.Gemfile.Merger
 
 		static public GameObject Instantiate(string key, Transform parent = null) 
 		{
-			Debug.Log("Instantiate: " + key);
+			// Debug.Log("Instantiate: " + key);
 			var instance = Object.Instantiate<GameObject>(cache[key]);
 			instance.name = key;
 
