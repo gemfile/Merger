@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
-    public interface IFieldView
+    public interface IFieldView: IBaseView
     {
 		void Dehighlight();
 		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);

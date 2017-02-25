@@ -8,8 +8,8 @@ namespace com.Gemfile.Merger
     }
     
     public class BaseController<M, V>
-        where M: BaseModel, new()
-        where V: BaseView
+        where M: IBaseModel, new()
+        where V: IBaseView
     {
         public M Model {
             get { return model; }
