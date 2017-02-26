@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 namespace com.Gemfile.Merger
 {
-    public interface IFieldView
+    public interface IFieldView: IBaseView
     {
 		void Dehighlight();
 		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);
@@ -69,7 +69,7 @@ namespace com.Gemfile.Merger
         
         public FieldView()
         {
-            deckNames = new string[] { "Deck" };
+            deckNames = new string[]{ "Deck" };
 
 			fields = new Dictionary<int, GameObject>();
 			fieldsNewAdded = new List<FieldNewAdded>();

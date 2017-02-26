@@ -2,7 +2,7 @@
 
 namespace com.Gemfile.Merger
 {
-    public interface IGameModel
+    public interface IGameModel: IBaseModel
     {
         List<PhaseOfGame> PhasesOfGame { get; }
         int CurrentIndexOfPhase { get; set; }

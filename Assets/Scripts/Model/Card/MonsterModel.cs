@@ -1,5 +1,3 @@
-using System;
-
 namespace com.Gemfile.Merger
 {
     [System.Serializable]

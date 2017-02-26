@@ -8,17 +8,17 @@ namespace com.Gemfile.Merger
 	public interface IGameController<M, V>: IBaseController<M, V>
 	{
 		bool IsGameOver();
-		IFieldController<FieldModel, FieldView> Field { get; }
+		IFieldController<FieldModel, IFieldView> Field { get; }
 	}
 
 	public class GameController<M, V>: BaseController<M, V>, IGameController<M, V>
-		where M: GameModel, new()
-		where V: GameView 
+		where M: IGameModel, new()
+		where V: IGameView 
 	{
-		public IFieldController<FieldModel, FieldView> Field {
+		public IFieldController<FieldModel, IFieldView> Field {
 			get { return field; }
 		}
-		IFieldController<FieldModel, FieldView> field;
+		IFieldController<FieldModel, IFieldView> field;
 		Queue<Func<bool>> commands;
 		
 		public GameController()
@@ -30,8 +30,8 @@ namespace com.Gemfile.Merger
 		{
 			base.Init(view);
 
-			field = new FieldController<FieldModel, FieldView>();
-			field.Init(view.GetComponentInChildren<FieldView>());
+			field = new FieldController<FieldModel, IFieldView>();
+			field.Init(view.Field);
 			
 			view.UI.Align(view.Field.BackgroundBounds);
 			
@@ -82,7 +82,11 @@ namespace com.Gemfile.Merger
 							SetNextPhase();
 						} else {
 							View.Field.HighlightCards(
-								View.Navigation.Set(field.GetWheresCanMerge(), View.Field.Fields, View.Field.CardBounds)
+								View.Navigation.Set(
+									field.GetWheresCanMerge(), 
+									View.Field.Fields, 
+									View.Field.CardBounds
+								)
 							);
 						}
 					}
@@ -91,7 +95,11 @@ namespace com.Gemfile.Merger
 				case PhaseOfGame.WAIT:
 					if (!View.Field.IsPlaying) {
 						View.Field.HighlightCards(
-							View.Navigation.Set(field.GetWheresCanMerge(), View.Field.Fields, View.Field.CardBounds)
+							View.Navigation.Set(
+								field.GetWheresCanMerge(), 
+								View.Field.Fields, 
+								View.Field.CardBounds
+							)
 						);
 						SetNextPhase();
 					}
@@ -150,9 +158,9 @@ namespace com.Gemfile.Merger
 
 		void ListenToLogic()
 		{
-			Field.OnMerged.AddListener(mergingInfo => {
-				view.UI.UpdateCoin(mergingInfo.playerInfo.coin);
-			});
+			Field.OnMerged.AddListener(mergingInfo => 
+				view.UI.UpdateCoin(mergingInfo.playerInfo.coin)
+			);
 		}
 
 		void SetNextPhase()

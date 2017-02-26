@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace com.Gemfile.Merger
 {
-    public interface IFieldModel
+    public interface IFieldModel: IBaseModel
     {
         Queue<ICardModel> DeckQueue { get; set; }
         int CountOfFields { get; }
@@ -83,7 +83,9 @@ namespace com.Gemfile.Merger
 
         PlayerModel MakePlayerModel()
         {
-            return new PlayerModel(new CardData { type="Player", value=13, resourceName="Worrior", cardName="Worrior" });
+            return new PlayerModel(new CardData { 
+				type="Player", value=13, resourceName="Worrior", cardName="Worrior" 
+			});
         }
 
         List<ICardModel> MakeCardsData()

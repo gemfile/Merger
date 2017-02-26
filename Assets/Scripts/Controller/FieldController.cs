@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
@@ -11,7 +9,7 @@ namespace com.Gemfile.Merger
 	{
 		List<NavigationInfo> GetWheresCanMerge();
 		void FillEmptyFields();
-		void Move(int pivotIndex, int colOffset, int rowOffset);
+		void Move(int targetIndex, int colFrom, int rowFrom);
 		bool Merge(int colOffset, int rowOffset);
 		int GetIndex(ICardModel card);
 		ICardModel GetCard(int index);
@@ -65,8 +63,8 @@ namespace com.Gemfile.Merger
 	}
 	
 	public class FieldController<M, V>: BaseController<M, V>, IFieldController<M, V>
-		where M: FieldModel, new()
-		where V: FieldView
+		where M: IFieldModel, new()
+		where V: IFieldView
 	{
 		public MergingEvent OnMerged { get { return onMerged; } } 
 		readonly MergingEvent onMerged = new MergingEvent();
@@ -86,10 +84,13 @@ namespace com.Gemfile.Merger
 		public void FillEmptyFields()
 		{
 			Debug.Log("FillEmptyFields");
-			var emptyFields = Model.Fields.Where(field => field.Value is EmptyModel).ToDictionary(p => p.Key, p => p.Value);
-			emptyFields.ForEach(emptyField => {
-				AddField(emptyField.Key, Model.DeckQueue.Dequeue());
-			});
+			var emptyFields = Model.Fields
+				.Where(field => field.Value is EmptyModel)
+				.ToDictionary(p => p.Key, p => p.Value);
+				
+			emptyFields.ForEach(emptyField => 
+				AddField(emptyField.Key, Model.DeckQueue.Dequeue())
+			);
 			View.ShowField();
 		}
 
@@ -109,27 +110,30 @@ namespace com.Gemfile.Merger
 
 			var navigationInfos = new List<NavigationInfo>();
 
-			var mergers = Model.Fields.Where(field => field.Value is IMerger).ToDictionary(p => p.Key, p => p.Value);
+			var mergers = Model.Fields
+				.Where(field => field.Value is IMerger)
+				.ToDictionary(p => p.Key, p => p.Value);
+
 			mergers.ForEach((merger) => {
 				int sourceIndex = merger.Key;
 				var wheresCanMerge = new List<Position>();
 
 				wheresWannaMerge.ForEach(whereWannaMerge => {
-					var nearbyPosition = new Position(sourceIndex, whereWannaMerge[0], whereWannaMerge[1]);
-					if (nearbyPosition.IsAcceptableIndex())
+					var positionNearby = new Position(sourceIndex, whereWannaMerge[0], whereWannaMerge[1]);
+
+					if (positionNearby.IsAcceptableIndex())
 					{
-						ICardModel nearbyCard = GetCard(nearbyPosition.index);
+						ICardModel nearbyCard = GetCard(positionNearby.index);
 						if (nearbyCard != null && !(merger.Value as IMerger).CantMerge(nearbyCard))
 						{
-							wheresCanMerge.Add(nearbyPosition);
+							wheresCanMerge.Add(positionNearby);
 						}
 					}
 				});
 
-				navigationInfos.Add(new NavigationInfo {
-					sourceIndex = merger.Key,
-					wheresCanMerge = wheresCanMerge
-				});
+				navigationInfos.Add(
+					new NavigationInfo {sourceIndex = merger.Key, wheresCanMerge = wheresCanMerge}
+				);
 			});
 
 			return navigationInfos;
@@ -147,7 +151,9 @@ namespace com.Gemfile.Merger
 
 			var backMonsterCard = GetCard(inbackofPlayer.index) as IMerger;
 
-			if (infrontofPlayer.IsAcceptableIndex() && frontCard != null && !Model.Player.CantMerge(frontCard))
+			if (infrontofPlayer.IsAcceptableIndex() 
+				&& frontCard != null 
+				&& !Model.Player.CantMerge(frontCard))
 			{
 				var playerCard = Model.Player as IMerger;
 				PlayerInfo playerInfo = playerCard.Merge(frontCard, playerPosition, infrontofPlayer);
@@ -167,7 +173,9 @@ namespace com.Gemfile.Merger
 			}
 			else if (inbackofPlayer.IsAcceptableIndex() && backMonsterCard != null)
 			{
-				PlayerInfo playerInfo = backMonsterCard.Merge(Model.Player, playerPosition, inbackofPlayer);
+				PlayerInfo playerInfo = backMonsterCard.Merge(
+					Model.Player, playerPosition, inbackofPlayer
+				);
 				Model.Fields[inbackofPlayer.index] = new EmptyModel();
 
 				var mergingInfo = new MergingInfo() {
@@ -185,20 +193,20 @@ namespace com.Gemfile.Merger
 			return isMerged;
 		}
 
-		public void Move(int pivotIndex, int colOffsetFrom, int rowOffsetFrom)
+		public void Move(int targetIndex, int colFrom, int rowFrom)
 		{
-			var inbackofPivot = new Position(pivotIndex, -colOffsetFrom, -rowOffsetFrom);
-			Debug.Log($"Move to : {pivotIndex}, {colOffsetFrom}, {rowOffsetFrom}");
-			Debug.Log($"inbackofPosition : {inbackofPivot.row}, {inbackofPivot.col}");
-			if (inbackofPivot.IsAcceptableIndex())
+			var inbackofTarget = new Position(targetIndex, -colFrom, -rowFrom);
+			Debug.Log($"Move to : {targetIndex}, {colFrom}, {rowFrom}");
+			Debug.Log($"inbackofPosition : {inbackofTarget.row}, {inbackofTarget.col}");
+			if (inbackofTarget.IsAcceptableIndex())
 			{
-				ICardModel backCard = GetCard(inbackofPivot.index);
+				ICardModel backCard = GetCard(inbackofTarget.index);
 				if (backCard != null)
 				{
-					Model.Fields[pivotIndex] = backCard;
-					Model.Fields[inbackofPivot.index] = new EmptyModel();
-					View.MoveField(new Position(pivotIndex), inbackofPivot);
-					Move(inbackofPivot.index, colOffsetFrom, rowOffsetFrom);
+					Model.Fields[targetIndex] = backCard;
+					Model.Fields[inbackofTarget.index] = new EmptyModel();
+					View.MoveField(new Position(targetIndex), inbackofTarget);
+					Move(inbackofTarget.index, colFrom, rowFrom);
 				}
 			}
 		}
@@ -209,12 +217,16 @@ namespace com.Gemfile.Merger
 			deckList.Clear();
 
 			int count = 0;
-			Model.DeckQueue.ForEach(card => Debug.Log(card.Data.type + ", " + card.Data.value + ", " + count++));
+			Model.DeckQueue.ForEach(card => 
+				Debug.Log(card.Data.type + ", " + card.Data.value + ", " + count++)
+			);
 		}
 
 		void SetField()
 		{
-			Enumerable.Range(0, Model.CountOfFields).ForEach(index => Model.Fields.Add(index, new EmptyModel()));
+			Enumerable.Range(0, Model.CountOfFields).ForEach(index => 
+				Model.Fields.Add(index, new EmptyModel())
+			);
 			View.SetField(Model.CountOfFields);
 		}
 
