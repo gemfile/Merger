@@ -9,10 +9,10 @@ namespace com.Gemfile.Merger
         Queue<ICardModel> DeckQueue { get; set; }
         int CountOfFields { get; }
         Dictionary<int, ICardModel> Fields { get; }
-        PlayerModel Player { get; }
+        IPlayerModel Player { get; }
         List<ICardModel> CardsData { get; }
-		int Rows { get; }
-		int Cols { get; }
+		int Rows { get; set; }
+		int Cols { get; set; }
     }
 
 	public class CardData 
@@ -35,41 +35,37 @@ namespace com.Gemfile.Merger
         public int CountOfFields {
             get { return countOfFields; }
         }
-        readonly int countOfFields;
+        int countOfFields;
 
 		public int Cols {
 			get { return cols; }
+			set { cols = value; countOfFields = rows * cols; }
 		}
-        readonly int cols;
+        int cols;
 		public int Rows {
 			get { return rows; }
+			set { rows = value; countOfFields = rows * cols; }
 		}
-		[SerializeField]
-        readonly int rows;
+        int rows;
 
         public Dictionary<int, ICardModel> Fields {
             get { return fields; }
         }
         readonly Dictionary<int, ICardModel> fields;
         
-        public PlayerModel Player {
+        public IPlayerModel Player {
             get { return player; }
-            set { player = value; }
         }
-        PlayerModel player;
+        IPlayerModel player;
 
         public List<ICardModel> CardsData {
             get { return cardsData; }
             set { cardsData = value; }
         }
         List<ICardModel> cardsData;
-
+		
         public FieldModel()
         {
-			rows = 3;
-			cols = 3;
-			countOfFields = rows * cols;
-
 			fields = new Dictionary<int, ICardModel>();
         }
 

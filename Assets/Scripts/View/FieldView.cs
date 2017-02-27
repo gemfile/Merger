@@ -13,7 +13,7 @@ namespace com.Gemfile.Merger
 		void Dehighlight();
 		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);
         void SetField(int countOfFields);
-        void AddField(Position targetPosition, CardData cardData, Position playerPosition);
+        void AddField(Position targetPosition, CardData cardData, Vector2 createdFrom);
         void ShowField();
         void MergeField(MergingInfo mergingInfo);
         void MoveField(Position targetPosition, Position cardPosition);
@@ -63,11 +63,10 @@ namespace com.Gemfile.Merger
 			get { return cardBounds; }
 		}
         Bounds cardBounds;
-        GameObject player;
 
 		public SpriteCaptureEvent OnSpriteCaptured { get { return onSpriteCaptured; } }
 		readonly SpriteCaptureEvent onSpriteCaptured = new SpriteCaptureEvent();
-        
+		
         public FieldView()
         {
             deckNames = new string[]{ "Deck" };
@@ -75,7 +74,7 @@ namespace com.Gemfile.Merger
 			fields = new Dictionary<int, GameObject>();
 			fieldsNewAdded = new List<FieldNewAdded>();
 
-			coroutineQueue = new CoroutineQueue(3, StartCoroutine);
+			coroutineQueue = new CoroutineQueue(10, StartCoroutine);
 			GAPS_BETWEEN_CARDS = 0.04f;
         }
 
@@ -116,7 +115,7 @@ namespace com.Gemfile.Merger
 			Enumerable.Range(0, countOfFields).ForEach(index => fields.Add(index, null));
 		}
 
-        public void AddField(Position targetPosition, CardData cardData, Position playerPosition)
+        public void AddField(Position targetPosition, CardData cardData, Vector2 createdFrom)
 		{
 			var card = new GameObject();
 			card.transform.SetParent(fieldContainer.transform);
@@ -140,13 +139,8 @@ namespace com.Gemfile.Merger
 			fields[targetPosition.index] = card;
 			fieldsNewAdded.Add(new FieldNewAdded() {
 				card = card, 
-				createdFrom = new Vector2(targetPosition.col - playerPosition.col, targetPosition.row - playerPosition.row).normalized
+				createdFrom = createdFrom
 			});
-
-			if (cardData.type == "Player")
-			{
-				player = card;
-			}
 		}
 
         bool atFirst = true;
@@ -227,12 +221,19 @@ namespace com.Gemfile.Merger
 
 		IEnumerator StartMerging(MergingInfo mergingInfo) 
 		{
-			var mergingCard = fields[mergingInfo.mergingPosition.index];
+			var mergerInfo = mergingInfo.mergerInfo;
+			var targetPosition = mergingInfo.targetPosition;
 			var sourceCard = fields[mergingInfo.sourcePosition.index];
-			var targetCard = fields[mergingInfo.targetPosition.index];
-			var playerInfo = mergingInfo.playerInfo;
+			var targetCard = fields[targetPosition.index];
+			var mergedCard = fields[mergerInfo.mergedPosition.index];
+			var mergerCard = fields[mergerInfo.mergerPosition.index];
+			var hp = mergerInfo.hp;
+			var merger = mergerInfo.merger;
+			var merged = mergerInfo.merged;
+			var equipments = mergerInfo.equipments;
+
 			var actionLogCaches = new List<ActionLogCache>();
-			playerInfo.actionLogs.ForEach(actionLog => {
+			mergerInfo.actionLogs.ForEach(actionLog => {
 				actionLogCaches.Add(new ActionLogCache() {
 					sourceCard = fields[actionLog.sourcePosition.index],
 					targetCard = fields[actionLog.targetPosition.index],
@@ -244,13 +245,13 @@ namespace com.Gemfile.Merger
 			var sourceCharacter = sourceCard.transform.GetChild(1);
 			var targetCharacter = targetCard.transform.GetChild(1);
 
-			yield return StartCoroutine(TakeCapture(mergingCard, playerInfo));
+			yield return StartCoroutine(TakeCapture(mergedCard, merger, merged, equipments));
 			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceCharacter, targetCharacter));
-			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergingCard, playerInfo, actionLogCaches));
-			yield return StartCoroutine(EndMerging(mergingInfo.targetPosition, player, playerInfo));
+			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergerCard, mergedCard, hp, actionLogCaches));
+			yield return StartCoroutine(EndMerging(targetPosition, mergerCard, hp));
 		}
 
-        IEnumerator TakeCapture(GameObject targetCard, PlayerInfo playerInfo)
+        IEnumerator TakeCapture(GameObject targetCard, ICardModel merger, ICardModel merged, List<ICardModel> equipments)
 		{
 			yield return new WaitForEndOfFrame();
 
@@ -277,7 +278,9 @@ namespace com.Gemfile.Merger
 				Screen.height / Camera.main.orthographicSize / 2
 			);
 
-			onSpriteCaptured.Invoke(capturedSprite, size, playerInfo.merged, playerInfo.equipments);
+			if (merger is PlayerModel) {
+				onSpriteCaptured.Invoke(capturedSprite, size, merged, equipments);
+			}
 		}
 
 		IEnumerator MoveCard(
@@ -311,8 +314,9 @@ namespace com.Gemfile.Merger
 		IEnumerator MergeCard(
 			GameObject sourceCard, 
 			GameObject targetCard, 
-			GameObject mergingCard, 
-			PlayerInfo playerData,
+			GameObject mergerCard,
+			GameObject meredCard, 
+			int hp,
 			List<ActionLogCache> actionLogCaches
 		) {
 			foreach (var actionLogCache in actionLogCaches)
@@ -340,24 +344,24 @@ namespace com.Gemfile.Merger
 				yield return new WaitForSeconds(1f);
 			}
 
-			SetVisibleOfValues(player, true);
-			GetText(player, "Value").FadeIn(.4f);
-			GetText(player, "Name").FadeIn(.4f);
-			SetValue(player, "Value", playerData.hp.ToString());
+			SetVisibleOfValues(mergerCard, true);
+			GetText(mergerCard, "Value").FadeIn(.4f);
+			GetText(mergerCard, "Name").FadeIn(.4f);
+			SetValue(mergerCard, "Value", hp.ToString());
 
-			SetTriggerOnMerging(mergingCard);
+			SetTriggerOnMerging(meredCard);
 			yield return new WaitForSeconds(.8f);
 
-			mergingCard.SetActive(false);
-			Destroy(mergingCard);
+			meredCard.SetActive(false);
+			Destroy(meredCard);
 		}
 
-		IEnumerator EndMerging(Position targetPosition, GameObject player, PlayerInfo playerData) 
+		IEnumerator EndMerging(Position targetPosition, GameObject mergerCard, int hp) 
 		{
-			fields[targetPosition.index] = player;
-			if (playerData.hp <= 0) 
+			fields[targetPosition.index] = mergerCard;
+			if (hp <= 0) 
 			{
-				CallAnimation(player, "death");
+				CallAnimation(mergerCard, "death");
 			}
 
 			yield return null;
@@ -466,7 +470,10 @@ namespace com.Gemfile.Merger
 		{
 			var sourceCharacter = targetCard.transform.GetChild(1);
 			var sourceAnimator = sourceCharacter.GetComponent<Animator>();
-			sourceAnimator.SetTrigger(name);
+			if (sourceAnimator != null) 
+			{
+				sourceAnimator.SetTrigger(name);
+			}
 		}
 
         void SetGettingEffect(GameObject targetCard, string nameAffected, int valueAffected)

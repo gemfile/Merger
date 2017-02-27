@@ -11,6 +11,11 @@ namespace com.Gemfile.Merger
 		IFieldController<FieldModel, IFieldView> Field { get; }
 	}
 
+	public enum PhaseOfGame
+	{
+		FILL = 0, PLAY, WAIT
+	}
+
 	public class GameController<M, V>: BaseController<M, V>, IGameController<M, V>
 		where M: IGameModel, new()
 		where V: IGameView 
@@ -31,7 +36,7 @@ namespace com.Gemfile.Merger
 			base.Init(view);
 
 			field = new FieldController<FieldModel, IFieldView>();
-			field.Init(view.Field);
+			field.Init(view.Field, 3, 3);
 			
 			view.UI.Align(view.Field.BackgroundBounds);
 			
@@ -64,9 +69,9 @@ namespace com.Gemfile.Merger
 			Field.OnMerged.RemoveAllListeners();
 		}
 
-		IEnumerator BeginTheGame() 
+		IEnumerator BeginTheGame()
 		{
-			while (true) 
+			while (true)
 			{
 				Watch();
 
@@ -175,7 +180,7 @@ namespace com.Gemfile.Merger
 		void ListenToLogic()
 		{
 			Field.OnMerged.AddListener(mergingInfo => 
-				view.UI.UpdateCoin(mergingInfo.playerInfo.coin)
+				view.UI.UpdateCoin(mergingInfo.mergerInfo.coin)
 			);
 		}
 

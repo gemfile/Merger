@@ -2,7 +2,7 @@
 
 namespace com.Gemfile.Merger
 {
-	public interface IGameView
+	public interface IGameView: IBaseView
 	{
 		void RequestCoroutine(IEnumerator coroutine);
 		IFieldView Field { get; }
