@@ -9,6 +9,7 @@ namespace com.Gemfile.Merger
 {
     public interface IFieldView: IBaseView
     {
+		void Reset();
 		void Dehighlight();
 		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);
         void SetField(int countOfFields);
@@ -80,13 +81,19 @@ namespace com.Gemfile.Merger
 
         public override void Init()
         {
-            fieldContainer = new GameObject();
-			fieldContainer.transform.SetParent(transform);
-			fieldContainer.name = "Field";
-
+            fieldContainer = transform.Find("Field").gameObject;
 			background = transform.Find("Background").gameObject;
 			backgroundBounds = background.GetBounds();
         }
+
+		public void Reset()
+		{
+			fields.ForEach(field => {
+				Destroy(field.Value);
+			});
+			Destroy(background.transform.Find("Ceilings").gameObject);
+			atFirst = true;
+		}
 
 		public void HighlightCards(List<NavigationColorInfo> navigationColorInfos)
 		{
@@ -105,6 +112,7 @@ namespace com.Gemfile.Merger
 
         public void SetField(int countOfFields)
 		{
+			fields.Clear();
 			Enumerable.Range(0, countOfFields).ForEach(index => fields.Add(index, null));
 		}
 
@@ -513,10 +521,12 @@ namespace com.Gemfile.Merger
 		{
 			var sizeOfScreen = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height));
 			var sizeOfGameView = gameObject.GetBounds();
+			var offsetY = sizeOfScreen.y - sizeOfGameView.max.y;
+
 			var positionOfGameView = transform.localPosition;
 			transform.localPosition = new Vector3(
 				positionOfGameView.x, 
-				sizeOfScreen.y - sizeOfGameView.extents.y - sizeOfGameView.center.y, 
+				positionOfGameView.y + offsetY,
 				positionOfGameView.z
 			);
 		}
@@ -541,11 +551,11 @@ namespace com.Gemfile.Merger
 			var sizeOfBackground = BackgroundBounds;
 			var startVectorOfRight = new Vector2(
 				sizeOfBackground.max.x + sizeOfCeiling.extents.x,
-				sizeOfBackground.max.y + sizeOfCeiling.extents.y
+				sizeOfBackground.max.y - sizeOfCeiling.extents.y
 			);
 			var startVectorOfLeft = new Vector2(
 				sizeOfBackground.min.x - sizeOfCeiling.extents.x,
-				sizeOfBackground.max.y + sizeOfCeiling.extents.y
+				sizeOfBackground.max.y - sizeOfCeiling.extents.y
 			);
 
 			Debug.Log("hoi :" + sizeOfBackground.max.x + ", " + sizeOfCeiling.extents.x + ", " + (sizeOfBackground.min.x - sizeOfCeiling.extents.x));
