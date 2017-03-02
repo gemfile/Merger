@@ -8,7 +8,8 @@ using NUnit.Framework;
 public class TestForFieldController {
 
 	[Test]
-	public void MoveTest() {
+	public void MoveTest() 
+	{
 		//1. Arrange
 		var fieldController = GetFieldController();
 		//2. Act
@@ -30,11 +31,11 @@ public class TestForFieldController {
 		Assert.AreEqual(thirdCardModel, firstCardModel);
 	}
 
-	IFieldController<FieldModel, IFieldView> GetFieldController()
+	IFieldController<FieldModel, IFieldView> GetFieldController(int col = 3, int row = 3)
 	{
 		var fieldController = new FieldController<FieldModel, IFieldView>();
 		var fieldView = Substitute.For<IFieldView>();
-		fieldController.Init(fieldView);
+		fieldController.Init(fieldView, col, row);
 		return fieldController;
 	}
 
@@ -44,11 +45,17 @@ public class TestForFieldController {
 	}
 	
 	[Test]
-	public void MergeTest() {
+	public void MergeTest() 
+	{
 		//1. Arrange
-		var fieldController = GetFieldController();
+		var fieldController = GetFieldController(2, 1);
+		SetFields(fieldController, new List<CardData>() {
+			new CardData { type="Potion", value=6, resourceName="Potion", cardName="Potion" },
+			new CardData { type="Player", value=13, resourceName="Worrior", cardName="Worrior" },
+		});
+
 		var initialIndex = GetModelIndex<PlayerModel>(fieldController);
-		var secondPosition = new Position(initialIndex, 1, 0);
+		var secondPosition = new Position(initialIndex, -1, 0);
 		fieldController.AddField(
 			secondPosition.index, 
 			new CoinModel(new CardData { 
@@ -56,14 +63,16 @@ public class TestForFieldController {
 			})
 		);
 		//2. Act
-		var isMerged = fieldController.Merge(1, 0);
+		var isMerged = fieldController.Merge(-1, 0);
 		//3. Assert
+		var playerModel = fieldController.GetCard(secondPosition.index) as PlayerModel;
 		Assert.AreEqual(true, isMerged);
+		Assert.AreEqual(8, playerModel.Coin);
 
 		//2. Act
-		var thirdPosition = new Position(secondPosition.index, 0, 1);
+		var thirdPosition = new Position(secondPosition.index, 1, 0);
 		//3. Assert
-		Assert.AreEqual(5, thirdPosition.index);
+		Assert.AreEqual(1, thirdPosition.index);
 
 		//1. Arrange
 		fieldController.AddField(
@@ -73,7 +82,7 @@ public class TestForFieldController {
 			})
 		);
 		//2. Act
-		isMerged = fieldController.Merge(0, 1);
+		isMerged = fieldController.Merge(1, 0);
 		//3. Assert
 		Assert.AreEqual(false, isMerged);
 
@@ -85,9 +94,9 @@ public class TestForFieldController {
 			})
 		);
 		//2. Act
-		isMerged = fieldController.Merge(0, 1);
+		isMerged = fieldController.Merge(1, 0);
 		//3. Assert
-		Assert.AreEqual(3, fieldController.Model.Player.Atk);
+		Assert.AreEqual(3, playerModel.Atk);
 		Assert.AreEqual(true, isMerged);
 
 		//1. Arrange
@@ -101,28 +110,13 @@ public class TestForFieldController {
 		//2. Act
 		isMerged = fieldController.Merge(-1, 0);
 		//3. Assert
-		Assert.AreEqual(4, fourthPosition.index);
+		Assert.AreEqual(0, fourthPosition.index);
 		Assert.AreEqual(true, isMerged);
-		Assert.AreEqual(6, fieldController.Model.Player.Hp);
+		Assert.AreEqual(6, playerModel.Hp);
 	}
 
-	[Test]
-	public void GetWheresCanMergeTest()
+	void SetFields(IFieldController<FieldModel, IFieldView> fieldController, List<CardData> dummyDatas)
 	{
-		//1. Arrange
-		var fieldController = GetFieldController();
-		var dummyDatas = new List<CardData>() {
-			new CardData { type="Potion", value=6, resourceName="Potion", cardName="Potion" },
-			new CardData { type="Player", value=13, resourceName="Worrior", cardName="Worrior" },
-			new CardData { type="Monster", value=2, resourceName="Slime.B", cardName="Slime.B" },
-			new CardData { type="Weapon", value=5, resourceName="Axe", cardName="Axe" },
-			new CardData { type="Monster", value=10, resourceName="Minotaur", cardName="Minotaur" },
-			new CardData { type="Coin", value=6, resourceName="Coin3", cardName="Coin" },
-			new CardData { type="Magic", value=5, resourceName="Magic", cardName="Magic" },
-			new CardData { type="Coin", value=3, resourceName="Coin1", cardName="Coin" },
-			new CardData { type="Monster", value=7, resourceName="Skeleton", cardName="Skeleton" }
-		};
-
 		var count = 0;
 		dummyDatas.ForEach(dummyData => {
 			fieldController.AddField(
@@ -133,8 +127,24 @@ public class TestForFieldController {
 				)
 			);
 		});
-		Position.Cols = 3;
-		Position.Rows = 3;
+	}
+
+	[Test]
+	public void GetWheresCanMergeTest()
+	{
+		//1. Arrange
+		var fieldController = GetFieldController();
+		SetFields(fieldController, new List<CardData>() {
+			new CardData { type="Potion", value=6, resourceName="Potion", cardName="Potion" },
+			new CardData { type="Player", value=13, resourceName="Worrior", cardName="Worrior" },
+			new CardData { type="Monster", value=2, resourceName="Slime.B", cardName="Slime.B" },
+			new CardData { type="Weapon", value=5, resourceName="Axe", cardName="Axe" },
+			new CardData { type="Coin", value=4, resourceName="Coin4", cardName="Coin" },
+			new CardData { type="Coin", value=6, resourceName="Coin3", cardName="Coin" },
+			new CardData { type="Magic", value=5, resourceName="Magic", cardName="Magic" },
+			new CardData { type="Coin", value=3, resourceName="Coin1", cardName="Coin" },
+			new CardData { type="Potion", value=7, resourceName="Potion", cardName="Potion" }
+		});
 		//2. Act
 		List<NavigationInfo> wheresCanMerge = fieldController.GetWheresCanMerge();
 		//3. Assert 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
@@ -7,6 +8,7 @@ namespace com.Gemfile.Merger
 {
 	public interface IFieldController<M, V>: IBaseController<M, V>
 	{
+		void Init(V view, int cols, int rows);
 		List<NavigationInfo> GetWheresCanMerge();
 		void FillEmptyFields();
 		void Move(int targetIndex, int colFrom, int rowFrom);
@@ -16,6 +18,7 @@ namespace com.Gemfile.Merger
 		void AddField(int key, ICardModel card);
 		MergingEvent OnMerged { get; }
 		bool IsThereEmptyModel();
+		IMergingController Merging { get; }
 	}
 
 	public class MergingEvent: UnityEvent<MergingInfo> {}
@@ -52,8 +55,7 @@ namespace com.Gemfile.Merger
 	{
 		public Position sourcePosition;
 		public Position targetPosition;
-		public PlayerInfo playerInfo;
-		public Position mergingPosition;
+		public MergerInfo mergerInfo;
 	}
 
 	public class NavigationInfo
@@ -67,14 +69,25 @@ namespace com.Gemfile.Merger
 		where V: IFieldView
 	{
 		public MergingEvent OnMerged { get { return onMerged; } } 
-		readonly MergingEvent onMerged = new MergingEvent();
+		readonly MergingEvent onMerged;
+
+		public IMergingController Merging { get { return merging; } }
+		readonly IMergingController merging;
+		Vector2 latestMergingDelta = new Vector2(0, -1);
+        
+
+		public FieldController()
+		{
+			onMerged = new MergingEvent();
+			merging = new MergingController();
+		}
 		
-		public override void Init(V view) 
+		public void Init(V view, int cols = 3, int rows = 3) 
 		{
 			base.Init(view);
 
-			Position.Cols = Model.Cols;
-			Position.Rows = Model.Rows;
+			Position.Cols = Model.Cols = cols;
+			Position.Rows = Model.Rows = rows;
 
 			PrepareADeck(Model.CardsData);
 			SetField();
@@ -124,7 +137,7 @@ namespace com.Gemfile.Merger
 					if (positionNearby.IsAcceptableIndex())
 					{
 						ICardModel nearbyCard = GetCard(positionNearby.index);
-						if (nearbyCard != null && !(merger.Value as IMerger).CantMerge(nearbyCard))
+						if (nearbyCard != null && !merging.CantMerge(merger.Value as IMerger, nearbyCard))
 						{
 							wheresCanMerge.Add(positionNearby);
 						}
@@ -139,56 +152,75 @@ namespace com.Gemfile.Merger
 			return navigationInfos;
 		}
 
+		object ReflectPropertyValue(object source, string property)
+		{
+			return source.GetType().GetField(property).GetValue(source);
+		}
+
+		class ChainingInfo: IComparable<ChainingInfo>
+		{
+			public int orderBy;
+			public int positionIndex;
+			public Position mergerPosition;
+			public Position targetPosition;
+			public IMerger merger;
+
+			public int CompareTo(ChainingInfo that) {
+				if (orderBy < 0) {
+					if (this.positionIndex < that.positionIndex) {
+						return -1;
+					}
+					if (this.positionIndex > that.positionIndex) {
+						return 1;
+					}
+				} else if (orderBy > 0) {
+					if (this.positionIndex > that.positionIndex) {
+						return -1;
+					}
+					if (this.positionIndex > that.positionIndex) {
+						return 1;
+					}
+				}
+				return 0;
+			}
+		}
+
+		void SaveMergingDelta(Vector2 mergingDelta)
+		{
+			latestMergingDelta = mergingDelta;
+		}
+		
 		public bool Merge(int colOffset, int rowOffset)
 		{
-			var isMerged = false;
+			SaveMergingDelta(new Vector2(colOffset, rowOffset));
 			
-			var playerIndex = GetIndex(Model.Player);
-			var playerPosition = new Position(playerIndex);
-			var infrontofPlayer = new Position(playerIndex, colOffset, rowOffset);
-			var inbackofPlayer = new Position(playerIndex, -colOffset, -rowOffset);
-			var frontCard = GetCard(infrontofPlayer.index);
+			var isMerged = false;
+			var mergerChains = CreateMergerChains(colOffset, rowOffset);
+			mergerChains.Values.ForEach(mergerChain => {
+				var leadingMerger = mergerChain[0];
 
-			var backMonsterCard = GetCard(inbackofPlayer.index) as IMerger;
+				var merger = leadingMerger.merger;
+				var mergerPosition = leadingMerger.mergerPosition;
+				var targetPosition = leadingMerger.targetPosition;
+				var cardNearby = GetCard(targetPosition.index);
+				Debug.Log(mergerPosition.index + " -> " + targetPosition.index);
 
-			if (infrontofPlayer.IsAcceptableIndex() 
-				&& frontCard != null 
-				&& !Model.Player.CantMerge(frontCard))
-			{
-				var playerCard = Model.Player as IMerger;
-				PlayerInfo playerInfo = playerCard.Merge(frontCard, playerPosition, infrontofPlayer);
-				Model.Fields[infrontofPlayer.index] = Model.Player;
-				Model.Fields[playerIndex] = new EmptyModel();
-
-				var mergingInfo = new MergingInfo() {
-					sourcePosition = playerPosition,
-					targetPosition = infrontofPlayer,
-					playerInfo = playerInfo,
-					mergingPosition = infrontofPlayer
-				};
-				View.MergeField(mergingInfo);
-				OnMerged.Invoke(mergingInfo);
-				Move(playerIndex, colOffset, rowOffset);
-				isMerged = true;
-			}
-			else if (inbackofPlayer.IsAcceptableIndex() && backMonsterCard != null)
-			{
-				PlayerInfo playerInfo = backMonsterCard.Merge(
-					Model.Player, playerPosition, inbackofPlayer
-				);
-				Model.Fields[inbackofPlayer.index] = new EmptyModel();
-
-				var mergingInfo = new MergingInfo() {
-					sourcePosition = inbackofPlayer,
-					targetPosition = playerPosition,
-					playerInfo = playerInfo,
-					mergingPosition = inbackofPlayer
-				};
-				View.MergeField(mergingInfo);
-				OnMerged.Invoke(mergingInfo);
-				Move(inbackofPlayer.index, colOffset, rowOffset);
-				isMerged = true;
-			}
+				if (!merging.CantMerge(merger, cardNearby)) {
+					MergerInfo mergerInfo = merging.Merge(merger, cardNearby, mergerPosition, targetPosition);
+					Model.Fields[targetPosition.index] = mergerInfo.merger;
+					Model.Fields[mergerPosition.index] = new EmptyModel();
+					
+					var mergingInfo = new MergingInfo() {
+						sourcePosition = mergerPosition,
+						targetPosition = targetPosition,
+						mergerInfo = mergerInfo,
+					};
+					View.MergeField(mergingInfo);
+					OnMerged.Invoke(mergingInfo);
+					Move(mergerPosition.index, colOffset, rowOffset);
+					isMerged = true;
+				}
+			});
 
 			return isMerged;
 		}
@@ -197,7 +229,6 @@ namespace com.Gemfile.Merger
 		{
 			var inbackofTarget = new Position(targetIndex, -colFrom, -rowFrom);
 			Debug.Log($"Move to : {targetIndex}, {colFrom}, {rowFrom}");
-			Debug.Log($"inbackofPosition : {inbackofTarget.row}, {inbackofTarget.col}");
 			if (inbackofTarget.IsAcceptableIndex())
 			{
 				ICardModel backCard = GetCard(inbackofTarget.index);
@@ -209,6 +240,46 @@ namespace com.Gemfile.Merger
 					Move(inbackofTarget.index, colFrom, rowFrom);
 				}
 			}
+		}
+
+		Dictionary<int, List<ChainingInfo>> CreateMergerChains(int colOffset, int rowOffset)
+		{
+			var mergers = Model.Fields
+				.Where(field => field.Value is IMerger)
+				.ToDictionary(p => p.Key, p => p.Value);
+
+			string chainingProperty = (colOffset != 0) ? "row" : (rowOffset != 0) ? "col" : "";
+			string positionProperty = chainingProperty == "row" ? "col" : "row";
+			int orderBy = (colOffset > 0 || rowOffset > 0) ? 1 : -1;
+
+			var mergerChains = new Dictionary<int, List<ChainingInfo>>();
+			mergers.ForEach((merger) => {
+				var positionNearby = new Position(merger.Key, colOffset, rowOffset);
+				if (positionNearby.IsAcceptableIndex() 
+					&& !merging.CantMerge(merger.Value as IMerger, GetCard(positionNearby.index)))
+				{
+					Debug.Log(merger.Key + " => " + positionNearby.index);
+					var chainingIndex = (int)ReflectPropertyValue(positionNearby, chainingProperty);
+					var positionIndex =	(int)ReflectPropertyValue(positionNearby, positionProperty);
+					List<ChainingInfo> mergerChain = null;
+					if (!mergerChains.TryGetValue(chainingIndex, out mergerChain)) {
+						mergerChain = mergerChains[chainingIndex] = new List<ChainingInfo>();
+					}
+					mergerChain.Add(new ChainingInfo() {
+						positionIndex = positionIndex, 
+						merger = merger.Value as IMerger, 
+						mergerPosition = new Position(merger.Key),
+						targetPosition = positionNearby,
+						orderBy = orderBy,
+					});
+				}
+			});
+
+			mergerChains.ForEach(mergerChain => {
+				mergerChain.Value.Sort();
+			});
+
+			return mergerChains;
 		}
 
 		void PrepareADeck(List<ICardModel> deckList)
@@ -241,7 +312,7 @@ namespace com.Gemfile.Merger
 			View.AddField(
 				new Position(key),
 				card.Data,
-				new Position(GetIndex(Model.Player))
+				-latestMergingDelta
 			);
 		}
 

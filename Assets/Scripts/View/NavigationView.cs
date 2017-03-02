@@ -8,7 +8,11 @@ namespace com.Gemfile.Merger
 {
 	public interface INavigationView: IBaseView
 	{
-		List<NavigationColorInfo> Set(List<NavigationInfo> navigationInfos, Dictionary<int, GameObject> fields, Bounds cardBounds);
+		List<NavigationColorInfo> Set(
+			List<NavigationInfo> navigationInfos, 
+			Dictionary<int, GameObject> fields, 
+			Bounds cardBounds
+		);
 		void Show(Vector2 touchDeltaFirst, Vector2 touchDelta);
 		void Clear();
 		void Hide();
@@ -68,7 +72,7 @@ namespace com.Gemfile.Merger
 				var sourceIndex = navigationInfo.sourceIndex;
 				var wheresCanMerge = navigationInfo.wheresCanMerge;
 				var colorPicked = lineColors[UnityEngine.Random.Range(0, lineColors.Count)];
-
+				
 				wheresCanMerge.ForEach(whereCanMerge => {
 					var sourcePosition = fields[sourceIndex].transform.position;
 					var targetPosition = fields[whereCanMerge.index].transform.position;
