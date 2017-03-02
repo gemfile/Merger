@@ -7,6 +7,7 @@ namespace com.Gemfile.Merger
 		void RequestCoroutine(IEnumerator coroutine);
 		IFieldView Field { get; }
 		ISwipeInput Swipe { get; }
+		IOrientationInput Orientation { get; }
 		IUIView UI { get; }
 		INavigationView Navigation { get; }
 		void Reset();
@@ -18,6 +19,10 @@ namespace com.Gemfile.Merger
 			get { return swipe; }
 		}
 		ISwipeInput swipe;
+		public IOrientationInput Orientation {
+			get { return orientation; }
+		}
+		IOrientationInput orientation;
 		public IUIView UI { 
 			get { return uiView; }
 		}
@@ -36,6 +41,7 @@ namespace com.Gemfile.Merger
 		public override void Init()
 		{
 			swipe = gameObject.GetComponent<SwipeInput>();
+			orientation = gameObject.GetComponent<OrientationInput>();
 			fieldView = transform.GetComponentInChildren<FieldView>();
 			uiView = transform.GetComponentInChildren<UIView>();
 			navigationView = transform.GetComponentInChildren<NavigationView>();
@@ -44,7 +50,7 @@ namespace com.Gemfile.Merger
 
 		public void Reset()
 		{
-			fieldView.Reset();
+			fieldView.Reset(true);
 		}
 
 		public void RequestCoroutine(IEnumerator coroutine)

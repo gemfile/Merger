@@ -9,7 +9,7 @@ namespace com.Gemfile.Merger
 {
     public interface IFieldView: IBaseView
     {
-		void Reset();
+		void Reset(bool withFields);
 		void Dehighlight();
 		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);
         void SetField(int countOfFields);
@@ -22,6 +22,7 @@ namespace com.Gemfile.Merger
         bool IsPlaying { get; }
 		Dictionary<int, GameObject> Fields { get; }
 		SpriteCaptureEvent OnSpriteCaptured { get; }
+		void RetakeCapture();
     }
 
 	public class SpriteCaptureEvent: UnityEvent<Sprite, Vector3, ICardModel, List<ICardModel>> {}
@@ -38,6 +39,15 @@ namespace com.Gemfile.Merger
 	{
 		public GameObject card;
 		public Vector2 createdFrom;
+	}
+
+	class TakenCaptureCache
+	{
+		internal GameObject capturedCard;
+		internal GameObject sourceCard; 
+		internal ICardModel merger; 
+		internal ICardModel merged;
+		internal List<ICardModel> equipments;
 	}
 
     public class FieldView : BaseView, IFieldView 
@@ -59,10 +69,12 @@ namespace com.Gemfile.Merger
 		}
 		Bounds backgroundBounds;
 		GameObject background;
+		GameObject ceilings;
 		public Bounds CardBounds {
 			get { return cardBounds; }
 		}
         Bounds cardBounds;
+		bool needAligning;
 
 		public SpriteCaptureEvent OnSpriteCaptured { get { return onSpriteCaptured; } }
 		readonly SpriteCaptureEvent onSpriteCaptured = new SpriteCaptureEvent();
@@ -76,6 +88,7 @@ namespace com.Gemfile.Merger
 
 			coroutineQueue = new CoroutineQueue(10, StartCoroutine);
 			GAPS_BETWEEN_CARDS = 0.04f;
+			needAligning = true;
         }
 
         public override void Init()
@@ -85,13 +98,20 @@ namespace com.Gemfile.Merger
 			backgroundBounds = background.GetBounds();
         }
 
-		public void Reset()
+		public void Reset(bool withFields)
 		{
-			fields.ForEach(field => {
-				Destroy(field.Value);
-			});
-			Destroy(background.transform.Find("Ceilings").gameObject);
-			atFirst = true;
+			if (withFields)
+			{
+				fields.ForEach(field => {
+					Destroy(field.Value);
+				});
+			}
+			if (ceilings)
+			{
+				Destroy(ceilings);
+			}
+			
+			needAligning = true;
 		}
 
 		public void HighlightCards(List<NavigationColorInfo> navigationColorInfos)
@@ -143,15 +163,14 @@ namespace com.Gemfile.Merger
 			});
 		}
 
-        bool atFirst = true;
 		public void ShowField()
 		{
-			if (atFirst) 
+			if (needAligning) 
 			{
 				AlignFields();
 				FillBackground();
 				AlignAtTopOfCamera();
-				atFirst = false;
+				needAligning = false;
 			}
 
 			Hide();
@@ -174,7 +193,7 @@ namespace com.Gemfile.Merger
 
 		IEnumerator StartShow()
 		{
-			var hasTweenCompleted = false;
+			var hasTweenCompleted = fieldsNewAdded.Count == 0;
 
 			fieldsNewAdded.ForEach(fieldNewAdded => {
 				var card = fieldNewAdded.card;
@@ -245,13 +264,41 @@ namespace com.Gemfile.Merger
 			var sourceCharacter = sourceCard.transform.GetChild(1);
 			var targetCharacter = targetCard.transform.GetChild(1);
 
-			yield return StartCoroutine(TakeCapture(mergedCard, merger, merged, equipments));
+			yield return StartCoroutine(TakeCapture(sourceCard, mergedCard, merger, merged, equipments));
 			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceCharacter, targetCharacter));
 			yield return StartCoroutine(MergeCard(sourceCard, targetCard, mergerCard, mergedCard, hp, actionLogCaches));
 			yield return StartCoroutine(EndMerging(targetPosition, mergerCard, hp));
 		}
 
-        IEnumerator TakeCapture(GameObject targetCard, ICardModel merger, ICardModel merged, List<ICardModel> equipments)
+		TakenCaptureCache latestCapture;
+		public void RetakeCapture()
+		{
+			if (latestCapture != null) 
+			{
+				StartCoroutine(StartRetakeCapture());
+			}
+		}
+
+		IEnumerator StartRetakeCapture()
+		{
+			var originOrder = latestCapture.capturedCard.GetComponent<SpriteRenderer>().sortingOrder;
+			var capturedCard = latestCapture.capturedCard;
+			var sourceCard = latestCapture.sourceCard;
+
+			capturedCard.gameObject.SetActive(true);
+			SetVisibleOfChild(sourceCard, "Background", false);
+			capturedCard.GetComponent<SpriteRenderer>().sortingOrder = 2;
+
+			yield return TakeCapture(
+				sourceCard, capturedCard, latestCapture.merger, latestCapture.merged, latestCapture.equipments
+			);
+			
+			capturedCard.GetComponent<SpriteRenderer>().sortingOrder = originOrder;
+			capturedCard.gameObject.SetActive(false);
+			SetVisibleOfChild(sourceCard, "Background", true);
+		}
+
+        IEnumerator TakeCapture(GameObject sourceCard, GameObject targetCard, ICardModel merger, ICardModel merged, List<ICardModel> equipments)
 		{
 			yield return new WaitForEndOfFrame();
 
@@ -279,6 +326,24 @@ namespace com.Gemfile.Merger
 			);
 
 			if (merger is PlayerModel) {
+				if (sourceCard.transform.Find(targetCard.name) == null)
+				{
+					var capturedCard = new GameObject(targetCard.name);
+					var spriteRenderer = capturedCard.AddComponent<SpriteRenderer>();
+					spriteRenderer.sprite = capturedSprite;
+					spriteRenderer.sortingOrder = -sourceCard.transform.childCount;
+					capturedCard.transform.SetParent(sourceCard.transform);
+					capturedCard.transform.localPosition = new Vector3(0, 0, 0);
+					capturedCard.gameObject.SetActive(false);
+
+					latestCapture = new TakenCaptureCache() {
+						sourceCard = sourceCard, 
+						capturedCard = capturedCard,
+						merger = merger,
+						merged = merged,
+						equipments = equipments,
+					};
+				}
 				onSpriteCaptured.Invoke(capturedSprite, size, merged, equipments);
 			}
 		}
@@ -315,7 +380,7 @@ namespace com.Gemfile.Merger
 			GameObject sourceCard, 
 			GameObject targetCard, 
 			GameObject mergerCard,
-			GameObject meredCard, 
+			GameObject mergedCard, 
 			int hp,
 			List<ActionLogCache> actionLogCaches
 		) {
@@ -349,11 +414,11 @@ namespace com.Gemfile.Merger
 			GetText(mergerCard, "Name").FadeIn(.4f);
 			SetValue(mergerCard, "Value", hp.ToString());
 
-			SetTriggerOnMerging(meredCard);
+			SetTriggerOnMerging(mergedCard);
 			yield return new WaitForSeconds(.8f);
 
-			meredCard.SetActive(false);
-			Destroy(meredCard);
+			mergedCard.SetActive(false);
+			Destroy(mergedCard);
 		}
 
 		IEnumerator EndMerging(Position targetPosition, GameObject mergerCard, int hp) 
@@ -379,7 +444,6 @@ namespace com.Gemfile.Merger
 				(cardBounds.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col,
 				(cardBounds.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
 			);
-			Debug.Log("StartMoving : " + cardPosition.index + ", " + movingCard.name);
 
 			movingCard.transform.DOLocalMove(
 				new Vector2(targetLocalPosition.x, targetLocalPosition.y), 0.4f
@@ -462,7 +526,6 @@ namespace com.Gemfile.Merger
 				default: trigger = "attack"; break;
 			}
 			
-			Debug.Log("SetTriggerOnAction : " + trigger);
 			CallAnimation(sourceCard, trigger);
 		}
 
@@ -540,14 +603,7 @@ namespace com.Gemfile.Merger
 
 		void FillBackground()
 		{
-			StartCoroutine(StartFillBackground());
-		}
-
-		IEnumerator StartFillBackground()
-		{
-			yield return null;
-
-			var ceilings = new GameObject("Ceilings");
+			ceilings = new GameObject("Ceilings");
 			ceilings.transform.SetParent(background.transform);
 			ceilings.transform.SetAsFirstSibling();
 
@@ -564,8 +620,6 @@ namespace com.Gemfile.Merger
 				sizeOfBackground.min.x - sizeOfCeiling.extents.x,
 				sizeOfBackground.max.y - sizeOfCeiling.extents.y
 			);
-
-			Debug.Log("hoi :" + sizeOfBackground.max.x + ", " + sizeOfCeiling.extents.x + ", " + (sizeOfBackground.min.x - sizeOfCeiling.extents.x));
 
 			var screenSize = Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
 

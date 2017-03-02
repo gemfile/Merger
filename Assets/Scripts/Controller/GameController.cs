@@ -65,6 +65,7 @@ namespace com.Gemfile.Merger
 			View.Swipe.OnSwipeEnd.RemoveAllListeners();
 			View.Swipe.OnSwipeMove.RemoveAllListeners();
 			View.Swipe.OnSwipeCancel.RemoveAllListeners();
+			View.Orientation.OnOrientationChange.RemoveAllListeners();
 			View.Field.OnSpriteCaptured.RemoveAllListeners();
 			Field.OnMerged.RemoveAllListeners();
 		}
@@ -74,7 +75,7 @@ namespace com.Gemfile.Merger
 			while (true)
 			{
 				Watch();
-
+				
 				if (!View.Field.IsPlaying && IsGameOver()) {
 					View.UI.SuggestRetry(() => {
 						Reset();
@@ -102,26 +103,14 @@ namespace com.Gemfile.Merger
 						if (succeeded) {
 							SetNextPhase();
 						} else {
-							View.Field.HighlightCards(
-								View.Navigation.Set(
-									field.GetWheresCanMerge(), 
-									View.Field.Fields, 
-									View.Field.CardBounds
-								)
-							);
+							SetNavigation();
 						}
 					}
 					break;
 
 				case PhaseOfGame.WAIT:
 					if (!View.Field.IsPlaying) {
-						View.Field.HighlightCards(
-							View.Navigation.Set(
-								field.GetWheresCanMerge(), 
-								View.Field.Fields, 
-								View.Field.CardBounds
-							)
-						);
+						SetNavigation();
 						SetNextPhase();
 					}
 					break;
@@ -134,6 +123,17 @@ namespace com.Gemfile.Merger
 					}
 					break;
 			}
+		}
+
+		void SetNavigation()
+		{
+			View.Field.HighlightCards(
+				View.Navigation.Set(
+					field.GetWheresCanMerge(), 
+					View.Field.Fields, 
+					View.Field.CardBounds
+				)
+			);
 		}
 
 		void ListenToInput()
@@ -170,8 +170,25 @@ namespace com.Gemfile.Merger
 					View.Navigation.Hide();
 				}
 			});
+
+			View.Orientation.OnOrientationChange.AddListener(() => {
+				View.RequestCoroutine(StartChangeOrientation());
+			});
 		}
-		
+
+		IEnumerator StartChangeOrientation()
+		{
+			yield return null;
+			View.Field.Reset(false);
+			yield return null;
+			View.UI.Align(View.Field.BackgroundBounds);
+			View.UI.ClearCards();
+			View.Field.ShowField();
+			View.Field.RetakeCapture();
+			View.Navigation.Clear();
+			SetNavigation();
+		}
+
 		void ListenToView()
 		{
 			View.Field.OnSpriteCaptured.AddListener(View.UI.AddCardAcquired);

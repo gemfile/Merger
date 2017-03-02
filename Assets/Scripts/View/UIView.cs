@@ -14,6 +14,7 @@ namespace com.Gemfile.Merger
         void AddCardAcquired(Sprite sprite, Vector3 size, ICardModel merged, List<ICardModel> equipments);
         void Align(Bounds backgroundBounds);
         void SuggestRetry(UnityAction callback);
+        void ClearCards();
     }
 
     class UIHandCard
@@ -90,6 +91,15 @@ namespace com.Gemfile.Merger
                     return true;
                 }
                 return false;
+            });
+        }
+
+        public void ClearCards()
+        {
+            handCards.RemoveAll(handCard => {
+                handCard.gameObject.SetActive(false);
+                Destroy(handCard.gameObject);
+                return true;
             });
         }
         
