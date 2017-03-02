@@ -15,7 +15,7 @@ public class TestForGameController
 		gameView.Swipe.OnSwipeEnd.Returns(new SwipeEvent());
 		gameView.Swipe.OnSwipeMove.Returns(new SwipeEvent());
 		gameView.Field.OnSpriteCaptured.Returns(new SpriteCaptureEvent());
-		
+		gameView.Orientation.OnOrientationChange.Returns(new OrientationEvent());
 		gameController.Init(gameView);
 
 		//Act
