@@ -67,6 +67,8 @@ namespace com.Gemfile.Merger
 			Dictionary<int, GameObject> fields, 
 			Bounds cardBounds) 
 		{
+			Clear();
+			
 			var navigationColorInfos = new List<NavigationColorInfo>();
 			navigationInfos.ForEach(navigationInfo => {
 				var sourceIndex = navigationInfo.sourceIndex;
