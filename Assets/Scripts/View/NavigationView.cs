@@ -13,7 +13,7 @@ namespace com.Gemfile.Merger
 			Dictionary<int, GameObject> fields, 
 			Bounds cardBounds
 		);
-		void Show(Vector2 touchDeltaFirst, Vector2 touchDelta);
+		void Show(Vector2 directionFirst, Vector2 touchDelta);
 		void Clear();
 		void Hide();
 	}
@@ -81,8 +81,8 @@ namespace com.Gemfile.Merger
 						delta.normalized.x * cardBounds.extents.x, 
 						delta.normalized.y * cardBounds.extents.y
 					);
-					sourcePosition += cardSize;
-					targetPosition -= cardSize;
+					sourcePosition += cardSize/2;
+					targetPosition -= cardSize/2;
 
 					var linePoints = new List<Vector2>() { 
 						Camera.main.WorldToScreenPoint(targetPosition), 
@@ -116,22 +116,23 @@ namespace com.Gemfile.Merger
 			return navigationColorInfos;
 		}
 
-		public void Show(Vector2 touchDeltaFirst, Vector2 touchDelta)
+		public void Show(Vector2 directionFirst, Vector2 touchDelta)
 		{
 			vectorLineInfos.ForEach(touchLineInfo => {
 				var fullDelta = touchLineInfo.fullDelta;
-				if (touchDelta.normalized == fullDelta.normalized && touchDeltaFirst.normalized == fullDelta.normalized)
+				if (directionFirst == fullDelta.normalized)
 				{
 					var vectorLine = touchLineInfo.value;
 					var sourcePosition = touchLineInfo.sourcePosition;
 
-					var clapmpedTargetPosition = sourcePosition + Vector2.ClampMagnitude(touchDelta, fullDelta.magnitude);
-					if(fullDelta.normalized == (clapmpedTargetPosition - sourcePosition).normalized)
-					{
-						vectorLine.points2[0] = clapmpedTargetPosition;
-						vectorLine.active = true;
-						vectorLine.Draw();
-					}
+					var clampedDelta = Vector2.ClampMagnitude(touchDelta, fullDelta.magnitude);
+					var clapmpedTargetPosition = sourcePosition + new Vector2(
+						clampedDelta.x * Math.Abs(directionFirst.x), 
+						clampedDelta.y * Math.Abs(directionFirst.y)
+					);
+					vectorLine.points2[0] = clapmpedTargetPosition;
+					vectorLine.active = true;
+					vectorLine.Draw();
 				}
 			});
 		}

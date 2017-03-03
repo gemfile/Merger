@@ -142,26 +142,14 @@ namespace com.Gemfile.Merger
 				if(!View.Field.IsPlaying) {
 					View.Navigation.Clear();
 					View.Field.Dehighlight();
-					switch(swipeInfo.direction) {
-						case Direction.Right: 
-							commands.Enqueue(() => field.Merge(1, 0));
-							break;
-						case Direction.Left: 
-							commands.Enqueue(() => field.Merge(-1, 0));
-						 	break;
-						case Direction.Up: 
-							commands.Enqueue(() => field.Merge(0, 1));
-						 	break;
-						case Direction.Down: 
-							commands.Enqueue(() => field.Merge(0, -1));
-						 	break;
-					}
+					var direction = swipeInfo.direction;
+					commands.Enqueue(() => field.Merge((int)direction.x, (int)direction.y));
 				}
 			});
 
 			View.Swipe.OnSwipeMove.AddListener(swipeInfo => {
 				if(!View.Field.IsPlaying) {
-					View.Navigation.Show(swipeInfo.touchDeltaFirst, swipeInfo.touchDelta);
+					View.Navigation.Show(swipeInfo.directionFirst, swipeInfo.touchDelta);
 				}
 			});
 

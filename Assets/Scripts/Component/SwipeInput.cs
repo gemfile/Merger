@@ -16,21 +16,12 @@ namespace com.Gemfile.Merger
     
     public class SwipeInfo 
 	{
-		public Direction direction;
-        public Vector2 touchDeltaFirst;
+		public Vector2 direction;
+        public Vector2 directionFirst;
 		public Vector2 touchDelta;
 		public float timeDelta;
 		public bool hasFreePass;
 	}
-
-	public enum Direction 
-	{
-		None,
-		Up, 
-		Down, 
-		Left, 
-		Right
-	};
 
     public class SwipeInput: MonoBehaviour, ISwipeInput
 	{
@@ -45,7 +36,7 @@ namespace com.Gemfile.Merger
         float timeEnd = 0;
         Vector2 touchBegin = Vector2.zero;
         Vector2 touchEnd = Vector2.zero;
-        Vector2 touchDeltaFirst = Vector2.zero;
+        Vector2 directionFirst = Vector2.zero;
         bool isTouchDown = false;
 
         void Update () 
@@ -64,73 +55,70 @@ namespace com.Gemfile.Merger
             ReadMouseInput(isPointerOverGui);
 #endif
 
-            JudgeInputIsRight(isPointerOverGui);
+            JudgeInputIsRight();
         }
 
-        void JudgeInputIsRight(bool isPointerOverGui)
+        void JudgeInputIsRight()
         {
-            if (timeBegin > 0 && timeEnd > 0 && !isPointerOverGui) 
+            if (timeBegin > 0 && timeEnd > 0) 
 			{
                 float timeDelta = timeEnd - timeBegin;
 
                 Vector2 touchDelta = touchEnd - touchBegin;
-                Direction direction = GetDirection(ref touchDelta);
-                if (direction != Direction.None) 
+                Vector2 direction = GetDirection(ref touchDelta);
+                if (direction != Vector2.zero) 
 				{
-                    if (touchDeltaFirst == Vector2.zero) {
-                        touchDeltaFirst = touchDelta;
+                    if (directionFirst == Vector2.zero) {
+                        directionFirst = direction;
                     }
 
                     var swipeInfo = new SwipeInfo {
                         direction = direction, 
-                        touchDeltaFirst = touchDeltaFirst,
+                        directionFirst = directionFirst,
                         touchDelta = touchDelta, 
                         timeDelta = timeDelta,
                         hasFreePass = false,
                     };
 
-                    if (isTouchDown) {
+                    if (directionFirst != direction) {
+                        onSwipeCancel.Invoke(null);
+                        Reset();
+                    }else if (isTouchDown) {
                         onSwipeMove.Invoke(swipeInfo);
                     } else {
-                        if (touchDeltaFirst.normalized != touchDelta.normalized) {
-                            onSwipeCancel.Invoke(null);
-                        } else {
-                            onSwipeEnd.Invoke(swipeInfo);
-                        }
+                        onSwipeEnd.Invoke(swipeInfo);
                         Reset();
                     }
                 }
             }
         }
 
-        Direction GetDirection(ref Vector2 touchDelta)
+        Vector2 GetDirection(ref Vector2 touchDelta)
         {
             float absoluteX = Math.Abs(touchDelta.x);
             float absoluteY = Math.Abs(touchDelta.y);
-            Direction direction = Direction.None;
+            Vector2 direction = Vector2.zero;
 
             if (absoluteX > absoluteY)
             {
-                touchDelta.y = 0;
                 if (touchDelta.x > 0)
                 {
-                    direction = Direction.Right;
+                    direction = Vector2.right;
                 } 
                 else 
                 {
-                    direction = Direction.Left;
+                    direction = Vector2.left;
                 }
             } 
             else if (absoluteX < absoluteY)
             {
-                touchDelta.x = 0;
                 if (touchDelta.y > 0) 
                 {
-                    direction = Direction.Up;
+                    direction = Vector2.up;
                 } 
                 else 
                 {
-                    direction = Direction.Down;
+                    direction = Vector2.down;
                 }
             }
 
@@ -193,34 +181,34 @@ namespace com.Gemfile.Merger
 
         void Reset()
         {
-            touchDeltaFirst = touchBegin = touchEnd = Vector2.zero;
+            directionFirst = touchBegin = touchEnd = Vector2.zero;
             timeBegin = timeEnd = 0;
         }
 
         void KeyboardUpdate() 
 		{
-            Direction direction = Direction.None;
+            Vector2 direction = Vector2.zero;
             if (Input.GetKeyDown(KeyCode.LeftArrow)) 
 			{
-                direction = Direction.Left;
+                direction = Vector2.left;
             } 
 			else if (Input.GetKeyDown(KeyCode.RightArrow)) 
 			{
-                direction = Direction.Right;
+                direction = Vector2.right;
             } 
 			else if (Input.GetKeyDown(KeyCode.UpArrow)) 
 			{
-                direction = Direction.Up;
+                direction = Vector2.up;
             } 
 			else if (Input.GetKeyDown(KeyCode.DownArrow)) 
 			{
-                direction = Direction.Down;
+                direction = Vector2.down;
             }
 
-            if (direction != Direction.None) 
+            if (direction != Vector2.zero) 
 			{
                 onSwipeEnd.Invoke(new SwipeInfo(){
-                    direction   = direction, 
+                    direction = direction, 
                     hasFreePass  = true
                 });
             }
