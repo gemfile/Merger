@@ -83,7 +83,7 @@ namespace com.Gemfile.Merger
                     if (directionFirst != direction) {
                         onSwipeCancel.Invoke(null);
                         Reset();
-                    }else if (isTouchDown) {
+                    } else if (isTouchDown) {
                         onSwipeMove.Invoke(swipeInfo);
                     } else {
                         onSwipeEnd.Invoke(swipeInfo);
@@ -140,7 +140,7 @@ namespace com.Gemfile.Merger
                     isTouchDown = true;
                 }
 
-                if (touchPhase == TouchPhase.Moved)
+                if (touchBegin != Vector2.zero)
                 {
                     timeEnd = Time.time;
                     touchEnd = touchPosition;
@@ -153,6 +153,7 @@ namespace com.Gemfile.Merger
 
                 if (touchPhase == TouchPhase.Canceled)
                 {
+                    onSwipeCancel.Invoke(null);
                     Reset();
                 }
             }
@@ -183,6 +184,7 @@ namespace com.Gemfile.Merger
         {
             directionFirst = touchBegin = touchEnd = Vector2.zero;
             timeBegin = timeEnd = 0;
+            isTouchDown = false;
         }
 
         void KeyboardUpdate() 
