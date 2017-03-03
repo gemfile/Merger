@@ -173,7 +173,6 @@ namespace com.Gemfile.Merger
 			View.UI.ClearCards();
 			View.Field.ShowField();
 			View.Field.RetakeCapture();
-			View.Navigation.Clear();
 			SetNavigation();
 		}
 
