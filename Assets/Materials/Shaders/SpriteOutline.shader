@@ -35,20 +35,21 @@
 			#pragma fragment frag
 			#pragma multi_compile _ PIXELSNAP_ON
 			#pragma shader_feature ETC1_EXTERNAL_ALPHA
+			
 			#include "UnityCG.cginc"
 
 			struct appdata_t
 			{
 				float4 vertex   : POSITION;
 				float4 color    : COLOR;
-				float2 texcoord : TEXCOORD0;
+				float4 texcoord : TEXCOORD0;
 			};
 
 			struct v2f
 			{
 				float4 vertex   : SV_POSITION;
-				fixed4 color : COLOR;
-				float2 texcoord  : TEXCOORD0;
+				fixed4 color 	: COLOR;
+				float4 texcoord : TEXCOORD0;
 			};
 
 			fixed4 _Color;
@@ -93,12 +94,11 @@
 				if (_Outline > 0 && c.a != 0) {
 					float totalAlpha = 1.0;
 
-					[unroll(16)]
 					for (int i = 1; i < _OutlineSize + 1; i++) {
-						fixed4 pixelUp = tex2D(_MainTex, IN.texcoord + fixed2(0, i * _MainTex_TexelSize.y));
-						fixed4 pixelDown = tex2D(_MainTex, IN.texcoord - fixed2(0, i *  _MainTex_TexelSize.y));
-						fixed4 pixelRight = tex2D(_MainTex, IN.texcoord + fixed2(i * _MainTex_TexelSize.x, 0));
-						fixed4 pixelLeft = tex2D(_MainTex, IN.texcoord - fixed2(i * _MainTex_TexelSize.x, 0));
+						fixed4 pixelUp = tex2Dlod(_MainTex, IN.texcoord + fixed4(0, i * _MainTex_TexelSize.y, 0, 0));
+						fixed4 pixelDown = tex2Dlod(_MainTex, IN.texcoord - fixed4(0, i *  _MainTex_TexelSize.y, 0, 0));
+						fixed4 pixelRight = tex2Dlod(_MainTex, IN.texcoord + fixed4(i * _MainTex_TexelSize.x, 0, 0, 0));
+						fixed4 pixelLeft = tex2Dlod(_MainTex, IN.texcoord - fixed4(i * _MainTex_TexelSize.x, 0, 0, 0));
 
 						totalAlpha = totalAlpha * pixelUp.a * pixelDown.a * pixelRight.a * pixelLeft.a;
 					}
