@@ -10,7 +10,7 @@ namespace com.Gemfile.Merger
 			IMerger source, 
 			ICardModel target, 
 			Position sourcePosition, 
-			Position targetPosition, 
+			Position targetPosition,
 			bool canUseWeapon = true
 		);
 		bool CantMerge(IMerger source, ICardModel target);
@@ -18,29 +18,29 @@ namespace com.Gemfile.Merger
 	
 	public class MergerInfo 
 	{
-		internal int hp;
-		internal int atk;
-		internal int def;
-		internal int coin;
-		internal ICardModel merger;
-		internal Position mergerPosition;
-		internal ICardModel merged;
-		internal Position mergedPosition;
-		internal List<ICardModel> equipments;
-		internal List<ActionLog> actionLogs; 
+		public int hp;
+		public int atk;
+		public int def;
+		public int coin;
+		public ICardModel merger;
+		public Position mergerPosition;
+		public ICardModel merged;
+		public Position mergedPosition;
+		public List<ICardModel> equipments;
+		public List<ActionLog> actionLogs; 
 	}
 
-	enum ActionType
+	public enum ActionType
 	{
 		GET = 0, USE_POTION, ATTACK, GET_DAMAGED, GET_COIN
 	}
 
-	class ActionLog
+	public class ActionLog
 	{
-		internal ActionType type;
-		internal Position sourcePosition;
-		internal Position targetPosition;
-		internal int valueAffected;
+		public ActionType type;
+		public Position sourcePosition;
+		public Position targetPosition;
+		public int valueAffected;
 	}
 	
 	public class MergingController : IMergingController
