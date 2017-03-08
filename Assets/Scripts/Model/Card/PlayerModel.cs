@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace com.Gemfile.Merger
 {
 	public interface IPlayerModel: IMerger, ICardModel
@@ -26,13 +29,21 @@ namespace com.Gemfile.Merger
 			set { coin = value; }
 		}
 		int coin;
-		public ICardModel Weapon {
-			get { return weapon; }
-			set { weapon = value; }
+		public List<ICardModel> Equipments {
+			get { return new List<ICardModel>(equipments); }
+			set { equipments = new List<ICardModel>(value); }
 		}
-		ICardModel weapon;
+		List<ICardModel> equipments;
 		public int Atk {
-			get { return weapon != null ? weapon.Data.value : 0; }
+			get {
+				var weapon = WeaponEquiped;
+				return weapon != null ? weapon.Data.value : 0; 
+			}
+		}
+		public ICardModel WeaponEquiped {
+			get {
+				return equipments.FirstOrDefault(equipment => equipment is WeaponModel);
+			}
 		}
 
         public PlayerModel(CardData cardData): base(cardData)
@@ -41,7 +52,7 @@ namespace com.Gemfile.Merger
 			limitOfHp = hp;
 			def = 0;
 			coin = 0;
-			weapon = null;
+			equipments = new List<ICardModel>();
 		}
     }
 }

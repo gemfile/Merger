@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace com.Gemfile.Merger
 {
 	public interface ICardModel
@@ -12,10 +14,11 @@ namespace com.Gemfile.Merger
 		int Def { get; set; }
 		int Coin { get; set; }
 		int Hp { get; set; }
-		ICardModel Weapon { get; set; }
 		int Atk { get; }
 		int LimitOfHp { get; }
-	}
+		List<ICardModel> Equipments { get; set; }
+		ICardModel WeaponEquiped { get; }
+    }
 
     public class CardModel: ICardModel
     {

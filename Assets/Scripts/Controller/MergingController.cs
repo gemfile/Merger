@@ -22,71 +22,83 @@ namespace com.Gemfile.Merger
 		public int atk;
 		public int def;
 		public int coin;
-		public ICardModel merger;
+		public ICardModel mergerModel;
 		public Position mergerPosition;
-		public ICardModel merged;
+		public ICardModel mergedModel;
 		public Position mergedPosition;
 		public List<ICardModel> equipments;
+		public ICardModel weaponEquiped;
 		public List<ActionLog> actionLogs; 
 	}
 
 	public enum ActionType
 	{
-		GET = 0, USE_POTION, ATTACK, GET_DAMAGED, GET_COIN
+		GETTING_SOMETHING = 0, USE_POTION, ATTACK, GET_DAMAGED, GETTING_COIN, GETTING_ROOT, GET_MERGED, DEAD
 	}
 
 	public class ActionLog
 	{
 		public ActionType type;
-		public Position sourcePosition;
-		public Position targetPosition;
+		public Position mergerPosition;
+		public Position mergedPosition;
 		public int valueAffected;
 	}
 	
-	public class MergingController : IMergingController
+	public class MergingController: IMergingController
 	{
 		public bool CantMerge(IMerger source, ICardModel target)
 		{
 			return (
-				target is EmptyModel ||
-				(target is IMerger && source.Atk <= 0) || 
-				(source is MonsterModel && !(target is PlayerModel))
+				target is EmptyModel 
+				|| (target is IMerger && source.Atk <= 0)
+				|| (source is MonsterModel && target is MonsterModel)
 			);
 		}
 
-		public MergerInfo Merge(IMerger source, ICardModel target, Position sourcePosition, Position targetPosition, bool canUseWeapon)
+		public MergerInfo Merge(IMerger source, ICardModel target, Position mergerPosition, Position mergedPosition, bool canUseWeapon)
 		{
 			Debug.Log("=== Merging ===");
 			Debug.Log("Source name : " + (source as ICardModel).Data.cardName + ", Target name : " + target.Data.cardName);
 			Debug.Log("Stats before merging : hp " + source.Hp  + ", atk " + source.Atk + ", def " + source.Def + ", coin " + source.Coin);
 			if (target is PlayerModel) {
-				return Merge(target as IMerger, source as ICardModel, targetPosition, sourcePosition, false);
+				return Merge(target as IMerger, source as ICardModel, mergedPosition, mergerPosition, false);
 			}
 			
 			var actionLogs = new List<ActionLog>();
 			var coin = source.Coin;
 			var limitOfHp = source.LimitOfHp;
 			var hp = source.Hp;
-			var weapon = source.Weapon;
+			var weaponEquiped = source.WeaponEquiped;
+			var equipments = source.Equipments;
 			var def = source.Def;
 
 			switch (target.Data.type) {
 				case "Coin":
 					actionLogs.Add(new ActionLog() {
-						type = ActionType.GET_COIN, 
-						sourcePosition = sourcePosition, 
-						targetPosition = targetPosition, 
+						type=ActionType.GET_MERGED, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
+					});
+					actionLogs.Add(new ActionLog() {
+						type = ActionType.GETTING_COIN, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
 						valueAffected = target.Data.value
 					});
 					coin += target.Data.value;
 					break;
 
 				case "Potion":
+					actionLogs.Add(new ActionLog() {
+						type=ActionType.GET_MERGED, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
+					});
 					var nextHp = Math.Min(limitOfHp, hp + target.Data.value);
-					actionLogs.Add(new ActionLog() { 
+					actionLogs.Add(new ActionLog() {
 						type = ActionType.USE_POTION, 
-						sourcePosition = sourcePosition, 
-						targetPosition = targetPosition, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
 						valueAffected = nextHp-hp
 					});
 					hp = nextHp;
@@ -94,47 +106,77 @@ namespace com.Gemfile.Merger
 
 				case "Monster":
 					int monsterValue = target.Data.value;
-					if (canUseWeapon && weapon != null) {
-						actionLogs.Add(new ActionLog() { 
+					if (canUseWeapon && weaponEquiped != null) {
+						actionLogs.Add(new ActionLog() {
 							type = ActionType.ATTACK, 
-							sourcePosition = sourcePosition, 
-							targetPosition = targetPosition, 
-							valueAffected = weapon.Data.value
+							mergerPosition = mergerPosition, 
+							mergedPosition = mergedPosition, 
+							valueAffected = weaponEquiped.Data.value
 						});
-						monsterValue = Math.Max(0, monsterValue - weapon.Data.value);
-						weapon = null;
+						monsterValue = Math.Max(0, monsterValue - weaponEquiped.Data.value);
+						equipments.Remove(weaponEquiped);
 					}
-					if (monsterValue > 0) {
-						int initialDef = def;
-						def = Math.Max(0, def - monsterValue);
-						monsterValue -= initialDef;
-					}
+					
 					if (monsterValue > 0) {
 						actionLogs.Add(new ActionLog() { 
 							type = ActionType.GET_DAMAGED, 
-							sourcePosition = targetPosition, 
-							targetPosition = sourcePosition, 
+							mergerPosition = mergedPosition, 
+							mergedPosition = mergerPosition, 
 							valueAffected = monsterValue 
 						});
 						hp -= monsterValue;
+					} 
+
+					actionLogs.Add(new ActionLog() {
+						type=ActionType.GET_MERGED, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
+					});
+
+					if (hp <= 0) {
+						actionLogs.Add(new ActionLog() { 
+							type = ActionType.DEAD, 
+							mergerPosition = mergerPosition, 
+							mergedPosition = mergedPosition, 
+						});
+					} else {
+						IMerger targetMerger = target as IMerger;
+						coin += targetMerger.Coin;
+						equipments.AddRange(targetMerger.Equipments);
+						actionLogs.Add(new ActionLog() {
+							type = ActionType.GETTING_ROOT, 
+							mergerPosition = mergerPosition, 
+							mergedPosition = mergerPosition, 
+							valueAffected = targetMerger.Coin
+						});
 					}
 					break;
 
 				case "Magic":
 					actionLogs.Add(new ActionLog() {
-						type = ActionType.GET, 
-						sourcePosition = sourcePosition, 
-						targetPosition = targetPosition, 
+						type=ActionType.GET_MERGED, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
+					});
+					actionLogs.Add(new ActionLog() {
+						type = ActionType.GETTING_SOMETHING, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
 						valueAffected = target.Data.value
 					});
 					break;
 
 				case "Weapon":
-					weapon = target;
-					actionLogs.Add(new ActionLog(){ 
-						type=ActionType.GET, 
-						sourcePosition = sourcePosition, 
-						targetPosition = targetPosition, 
+					equipments.Add(target);
+					actionLogs.Add(new ActionLog() {
+						type=ActionType.GET_MERGED, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
+					});
+					actionLogs.Add(new ActionLog() {
+						type=ActionType.GETTING_SOMETHING, 
+						mergerPosition = mergerPosition, 
+						mergedPosition = mergedPosition, 
 						valueAffected = target.Data.value
 					});
 					break;
@@ -142,8 +184,8 @@ namespace com.Gemfile.Merger
 
 			source.Coin = coin;
 			source.Hp = hp;
-			source.Weapon = weapon;
 			source.Def = def;
+			source.Equipments = equipments;
 			
 			Debug.Log("Stats after merging : hp " + hp  + ", atk " + source.Atk + ", def " + def + ", coin " + coin);
 			Debug.Log("===============");
@@ -153,11 +195,12 @@ namespace com.Gemfile.Merger
 				coin = coin, 
 				atk = source.Atk, 
 				def = def, 
-				merger = source as ICardModel,
-				mergerPosition = sourcePosition,
-				merged = target, 
-				mergedPosition = targetPosition,
-				equipments = new List<ICardModel>{ weapon },
+				mergerModel = source as ICardModel,
+				mergerPosition = mergerPosition,
+				mergedModel = target, 
+				mergedPosition = mergedPosition,
+				equipments = equipments,
+				weaponEquiped = weaponEquiped,
 				actionLogs = actionLogs
 			};
 		}
