@@ -6,6 +6,7 @@ namespace com.Gemfile.Merger
     {
         void Init();
         Transform Transform { get; }
+        GameObject GameObject { get; }
     }
     
     public class BaseView: MonoBehaviour, IBaseView
@@ -17,6 +18,11 @@ namespace com.Gemfile.Merger
         public Transform Transform
         {
             get { return transform; }
+        }
+
+        public GameObject GameObject
+        {
+            get { return gameObject; }
         }
     }
 }

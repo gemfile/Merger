@@ -11,7 +11,7 @@ namespace com.Gemfile.Merger
     {
         void UpdateCoin(int coin);
         void UpdateDeckCount(int deckCount);
-        void AddCardAcquired(Sprite sprite, Vector3 size, ICardModel merged, List<ICardModel> equipments);
+        void AddCardAcquired(SpriteCapturedInfo spriteCapturedInfo);
         void Align(Bounds backgroundBounds);
         void SuggestRetry(UnityAction callback);
         void ClearCards();
@@ -65,32 +65,54 @@ namespace com.Gemfile.Merger
             );
         }
 
-        public void AddCardAcquired(Sprite sprite, Vector3 size, ICardModel merged, List<ICardModel> equipments)
+        public void AddCardAcquired(SpriteCapturedInfo spriteCapturedInfo)
         {
-            if (equipments.Exists(equipment => equipment == merged))
+            Sprite capturedSprite = spriteCapturedInfo.capturedSprite;
+            Vector3 size = spriteCapturedInfo.size;
+            ICardModel mergedModel = spriteCapturedInfo.mergedModel; 
+            List<ICardModel> equipments = spriteCapturedInfo.equipments;
+
+            var delay = 0.0f;
+            var duration = 0.4f;
+            if (equipments.Exists(equipment => equipment == mergedModel))
             {
                 var uiCardMask = ResourceCache.Instantiate("UICardMask");
                 uiCardMask.transform.SetParent(handContainer, false);
-                uiCardMask.transform.Find("UICard").GetComponent<Image>().sprite = sprite;
+                uiCardMask.transform.SetAsFirstSibling();
+                uiCardMask.transform.Find("UICard").GetComponent<Image>().sprite = capturedSprite;
 
                 var uiCardTransform = uiCardMask.GetComponent<RectTransform>();
                 uiCardTransform.sizeDelta = size;
-                uiCardTransform.DOAnchorPosY(uiCardTransform.anchoredPosition.y - size.y, .4f).From().SetEase(Ease.OutCubic).SetDelay(0.8f);
-                handCards.Add(new UIHandCard(){ gameObject = uiCardMask, card = merged });
+                uiCardTransform.anchoredPosition = new Vector2(
+                    (handContainer.childCount-1) * size.x/2, 
+                    uiCardTransform.anchoredPosition.y
+                );
+                uiCardTransform.DOAnchorPosY(uiCardTransform.anchoredPosition.y - size.y, duration)
+                    .From()
+                    .SetEase(Ease.OutCubic)
+                    .SetDelay(delay);
+                handCards.Add(new UIHandCard(){ gameObject = uiCardMask, card = mergedModel });
             }
 
             handCards.RemoveAll(handCard => {
                 if (!equipments.Exists(equipment => equipment == handCard.card))
                 {
-                    var delay = 0.8f;
                     var sequence = DOTween.Sequence();
                     sequence.SetDelay(delay);
-                    sequence.Append(handCard.gameObject.transform.GetChild(0).GetComponent<Image>().DOFade(0, .4f));
-                    sequence.Insert(delay, handCard.gameObject.GetComponent<RectTransform>().DOAnchorPosY(-40, .4f));
+                    sequence.Append(handCard.gameObject.transform.GetChild(0).GetComponent<Image>().DOFade(0, duration));
+                    sequence.Insert(delay, handCard.gameObject.GetComponent<RectTransform>().DOAnchorPosY(-40, duration));
                     sequence.AppendCallback(() => Destroy(handCard.gameObject));
                     return true;
                 }
                 return false;
+            });
+
+            var count = 0;
+            handCards.ForEach(handCard => {
+                handCard.gameObject.transform.DOLocalMoveX(count * size.x/2, duration)
+                    .SetEase(Ease.OutCubic)
+                    .SetDelay(delay);
+                count++;
             });
         }
 
@@ -98,6 +120,7 @@ namespace com.Gemfile.Merger
         {
             handCards.RemoveAll(handCard => {
                 handCard.gameObject.SetActive(false);
+                handCard.gameObject.transform.SetParent(null);
                 Destroy(handCard.gameObject);
                 return true;
             });

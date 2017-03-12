@@ -172,7 +172,7 @@ namespace com.Gemfile.Merger
 			View.UI.Align(View.Field.BackgroundBounds);
 			View.UI.ClearCards();
 			View.Field.ShowField();
-			View.Field.RetakeCapture();
+			View.Field.RetakeCapture(Field.GetPlayerInfo());
 			SetNavigation();
 		}
 

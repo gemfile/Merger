@@ -52,7 +52,9 @@ public class TestForMergeController
 		Assert.False(cantMonsterMergePlayer);
 
 		//1. Arrange
-		player.Weapon = weapon;
+		var equipments = player.Equipments;
+		equipments.Add(weapon);
+		player.Equipments = equipments;
 
 		//3. Assert
 		Assert.False(mergingController.CantMerge(player, monster));
@@ -82,14 +84,14 @@ public class TestForMergeController
 		MergerInfo playerMergesCoin = mergingController.Merge(player, coin, new Position(0), new Position(1));
 		//3. Assert
 		Assert.AreEqual(4, playerMergesCoin.coin);
-		Assert.AreEqual(ActionType.GET_COIN, playerMergesCoin.actionLogs[0].type);
+		Assert.AreEqual(ActionType.GETTING_COIN, playerMergesCoin.actionLogs[0].type);
 		Assert.AreEqual(4, playerMergesCoin.actionLogs[0].valueAffected);
 
 		//2. Act
 		MergerInfo playerMergesWeapon = mergingController.Merge(player, weapon, new Position(0), new Position(1));
 		//3. Assert
 		Assert.AreEqual(5, playerMergesWeapon.atk);
-		Assert.AreEqual(ActionType.GET, playerMergesWeapon.actionLogs[0].type);
+		Assert.AreEqual(ActionType.GETTING_SOMETHING, playerMergesWeapon.actionLogs[0].type);
 		Assert.AreEqual(5, playerMergesWeapon.actionLogs[0].valueAffected);
 
 		//2. Act

@@ -10,7 +10,7 @@ namespace com.Gemfile.Merger
 	{
 		List<NavigationColorInfo> Set(
 			List<NavigationInfo> navigationInfos, 
-			Dictionary<int, GameObject> fields, 
+			Dictionary<int, ICardView> fields, 
 			Bounds cardBounds
 		);
 		void Show(Vector2 directionFirst, Vector2 touchDelta);
@@ -64,7 +64,7 @@ namespace com.Gemfile.Merger
 
 		public List<NavigationColorInfo> Set(
 			List<NavigationInfo> navigationInfos, 
-			Dictionary<int, GameObject> fields, 
+			Dictionary<int, ICardView> fields, 
 			Bounds cardBounds) 
 		{
 			Clear();
@@ -76,8 +76,8 @@ namespace com.Gemfile.Merger
 				var colorPicked = lineColors[UnityEngine.Random.Range(0, lineColors.Count)];
 				
 				wheresCanMerge.ForEach(whereCanMerge => {
-					var sourcePosition = fields[sourceIndex].transform.position;
-					var targetPosition = fields[whereCanMerge.index].transform.position;
+					var sourcePosition = fields[sourceIndex].Transform.position;
+					var targetPosition = fields[whereCanMerge.index].Transform.position;
 					var delta = targetPosition - sourcePosition;
 					var cardSize = new Vector3(
 						delta.normalized.x * cardBounds.extents.x, 
