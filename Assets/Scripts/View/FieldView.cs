@@ -9,7 +9,6 @@ namespace com.Gemfile.Merger
 {
     public interface IFieldView: IBaseView
     {
-		void Reset(bool withFields);
 		void Dehighlight();
 		void HighlightCards(List<NavigationColorInfo> navigationColorInfos);
         void SetField(int countOfFields);
@@ -109,20 +108,29 @@ namespace com.Gemfile.Merger
 			backgroundBounds = background.GetBounds();
         }
 
-		public void Reset(bool withFields)
+		public override void ChangeOrientation()
 		{
-			if (withFields)
-			{
-				fields.ForEach(field => {
-					Destroy(field.Value.GameObject);
-				});
+			needAligning = true;
+
+			if (ceilings) {
+				Destroy(ceilings);
 			}
-			if (ceilings)
-			{
+
+			ShowField();
+		}
+
+		public override void Reset()
+		{
+			needAligning = true;
+
+			fields.ForEach(field => {
+				Destroy(field.Value.GameObject);
+			});
+			
+			if (ceilings) {
 				Destroy(ceilings);
 			}
 			
-			needAligning = true;
 		}
 
 		public void HighlightCards(List<NavigationColorInfo> navigationColorInfos)
@@ -270,11 +278,8 @@ namespace com.Gemfile.Merger
 				});
 			});
 
-			var sourceCharacter = sourceCard.Character;
-			var targetCharacter = targetCard.Character;
-
 			yield return StartCoroutine(TakeCapture(mergerCard, mergedCard, mergerModel, mergedModel, equipments));
-			yield return StartCoroutine(MoveCard(sourceCard, targetCard, sourceCharacter, targetCharacter));
+			yield return StartCoroutine(MoveCard(sourceCard, targetCard));
 			yield return StartCoroutine(MergeCard(mergerCard, hp, actionLogCaches));
 			yield return StartCoroutine(EndMerging(targetPosition, mergerCard, mergedCard, mergerModel, equipments));
 		}
@@ -388,24 +393,17 @@ namespace com.Gemfile.Merger
 
 		IEnumerator MoveCard(
 			ICardView sourceCard, 
-			ICardView targetCard, 
-			Transform sourceCharacter,
-			Transform targetCharacter
+			ICardView targetCard
 		) {
 			sourceCard.SetVisibleOfValues(false);
 			targetCard.SetVisibleOfValues(false);
 			sourceCard.SetVisibleOfChild("Suit", false);
 			targetCard.SetVisibleOfChild("Suit", false);
-			
-			var x = (targetCard.Transform.localPosition - sourceCard.Transform.localPosition).normalized.x;
-			sourceCharacter.transform.localScale = new Vector3(
-				Mathf.Abs(x) == 1 ? x : sourceCharacter.transform.localScale.x,
-				1,
-				1
-			);
-			sourceCharacter.GetComponent<Animator>().SetTrigger("walk");
-			sourceCharacter.GetComponent<SpriteRenderer>().sortingOrder = 1;
-			targetCharacter.GetComponent<SpriteRenderer>().sortingOrder = 0;
+
+			SetDirectionOfCharacter(sourceCard, targetCard.Transform.localPosition - sourceCard.Transform.localPosition);
+			sourceCard.Character.GetComponent<Animator>().SetTrigger("walk");
+			sourceCard.Character.GetComponent<SpriteRenderer>().sortingOrder = 1;
+			targetCard.Character.GetComponent<SpriteRenderer>().sortingOrder = 0;
 
 			sourceCard.Transform.DOLocalMove(
 				new Vector2(targetCard.Transform.localPosition.x, targetCard.Transform.localPosition.y), 0.4f
@@ -467,6 +465,17 @@ namespace com.Gemfile.Merger
 			yield return null;
 		}
 
+		void SetDirectionOfCharacter(ICardView card, Vector3 movingVector)
+		{
+			var x = movingVector.normalized.x;
+			Debug.Log("SetDirectionOfCharacter : " + movingVector + ", " + x);
+			card.Character.localScale = new Vector3(
+				Mathf.Abs(x) == 1 ? x : card.Character.localScale.x,
+				1,
+				1
+			);
+		}
+
         public void MoveField(Position targetPosition, Position cardPosition)
 		{
 			coroutineQueue.Run(StartMoving(targetPosition, cardPosition));
@@ -475,11 +484,16 @@ namespace com.Gemfile.Merger
 		IEnumerator StartMoving(Position targetPosition, Position cardPosition)
 		{
 			var movingCard = fields[cardPosition.index];
-			var targetLocalPosition = new Vector2(
+			var targetLocalPosition = new Vector3(
 				(cardBounds.size.x + GAPS_BETWEEN_CARDS) * targetPosition.col,
 				(cardBounds.size.y + GAPS_BETWEEN_CARDS) * targetPosition.row
 			);
 
+			var animator = movingCard.Character.GetComponent<Animator>();
+			if (animator != null) {
+				animator.SetTrigger("walk");
+				SetDirectionOfCharacter(movingCard, targetLocalPosition - movingCard.Transform.localPosition);
+			}
 			movingCard.Transform.DOLocalMove(
 				new Vector2(targetLocalPosition.x, targetLocalPosition.y), 0.4f
 			).SetEase(Ease.OutSine);
@@ -498,7 +512,7 @@ namespace com.Gemfile.Merger
 						mergedCard.CallAnimation("death"); 
 						delay += 1f;
 					}
-					mergedCard.Transform.GetComponent<SpriteRenderer>().DOFade(0, .4f).SetDelay(delay + 1f);
+					mergedCard.Character.GetComponent<SpriteRenderer>().DOFade(0, .4f).SetDelay(delay + 1f);
 					yield return new WaitForSeconds(delay);
 					break;
 

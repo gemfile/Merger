@@ -5,6 +5,8 @@ namespace com.Gemfile.Merger
     public interface IBaseView
     {
         void Init();
+        void Reset();
+        void ChangeOrientation();
         Transform Transform { get; }
         GameObject GameObject { get; }
     }
@@ -13,6 +15,16 @@ namespace com.Gemfile.Merger
     {
         public virtual void Init()
         {
+        }
+
+        public virtual void Reset()
+        {
+
+        }
+
+        public virtual void ChangeOrientation()
+        {
+
         }
 
         public Transform Transform

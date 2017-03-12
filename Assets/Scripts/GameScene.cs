@@ -12,13 +12,13 @@ namespace com.Gemfile.Merger
 #endif
 		}
 		
-		GameController<GameModel, GameView> gameController;
+		IGameController<GameModel, IGameView> gameController;
 		
 		void Start()
 		{
 			ResourceCache.LoadAll(SceneManager.GetActiveScene().name);
 			
-			gameController = new GameController<GameModel, GameView>();
+			gameController = new GameController<GameModel, IGameView>();
 			gameController.Init(transform.GetComponentInChildren<GameView>());
 		}
 

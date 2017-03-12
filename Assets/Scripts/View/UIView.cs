@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace com.Gemfile.Merger
 {
-    public interface IUIView
+    public interface IUIView: IBaseView
     {
         void UpdateCoin(int coin);
         void UpdateDeckCount(int deckCount);
@@ -139,6 +139,11 @@ namespace com.Gemfile.Merger
         public void SuggestRetry(UnityAction callback)
         {
             modalPanel.Choice(callback);
+        }
+
+        public override void Reset()
+        {
+            ClearCards();
         }
     }
 }

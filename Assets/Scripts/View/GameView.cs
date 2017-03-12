@@ -10,7 +10,6 @@ namespace com.Gemfile.Merger
 		IOrientationInput Orientation { get; }
 		IUIView UI { get; }
 		INavigationView Navigation { get; }
-		void Reset();
 	}
 
 	public class GameView: BaseView, IGameView
@@ -48,9 +47,18 @@ namespace com.Gemfile.Merger
 			navigationView.Init();
 		}
 
-		public void Reset()
+		public override void Reset()
 		{
-			fieldView.Reset(true);
+			GetComponentsInChildren<IBaseView>().ForEach(view => {
+				if (!(view is GameView)) view.Reset();
+			});
+		}
+
+		public override void ChangeOrientation()
+		{
+			GetComponentsInChildren<IBaseView>().ForEach(view => {
+				if (!(view is GameView)) view.ChangeOrientation(); 
+			});
 		}
 
 		public void RequestCoroutine(IEnumerator coroutine)

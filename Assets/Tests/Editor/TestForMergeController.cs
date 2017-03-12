@@ -46,9 +46,9 @@ public class TestForMergeController
 		Assert.False(cantPlayerMergeWeapon);
 		Assert.True(cantPlayerMergeMonster);
 
-		Assert.True(cantMonsterMergePotion);
-		Assert.True(cantMonsterMergeCoin);
-		Assert.True(cantMonsterMergeWeapon);
+		Assert.False(cantMonsterMergePotion);
+		Assert.False(cantMonsterMergeCoin);
+		Assert.False(cantMonsterMergeWeapon);
 		Assert.False(cantMonsterMergePlayer);
 
 		//1. Arrange
@@ -80,34 +80,48 @@ public class TestForMergeController
 		var weapon = new WeaponModel(new CardData {
 			type="Weapon", value=5, resourceName="Axe", cardName="Axe"
 		});
+		var secondWeapon = new WeaponModel(new CardData {
+			type="Weapon", value=2, resourceName="Knife", cardName="Knife"
+		});
 		//2. Act
 		MergerInfo playerMergesCoin = mergingController.Merge(player, coin, new Position(0), new Position(1));
 		//3. Assert
+		var actionLogs = playerMergesCoin.actionLogs;
 		Assert.AreEqual(4, playerMergesCoin.coin);
-		Assert.AreEqual(ActionType.GETTING_COIN, playerMergesCoin.actionLogs[0].type);
-		Assert.AreEqual(4, playerMergesCoin.actionLogs[0].valueAffected);
+		Assert.AreEqual(ActionType.GETTING_COIN, actionLogs[1].type);
+		Assert.AreEqual(4, actionLogs[1].valueAffected);
 
 		//2. Act
 		MergerInfo playerMergesWeapon = mergingController.Merge(player, weapon, new Position(0), new Position(1));
 		//3. Assert
+		actionLogs = playerMergesWeapon.actionLogs;
 		Assert.AreEqual(5, playerMergesWeapon.atk);
-		Assert.AreEqual(ActionType.GETTING_SOMETHING, playerMergesWeapon.actionLogs[0].type);
-		Assert.AreEqual(5, playerMergesWeapon.actionLogs[0].valueAffected);
+		Assert.AreEqual(ActionType.GETTING_SOMETHING, actionLogs[1].type);
+		Assert.AreEqual(5, actionLogs[1].valueAffected);
+		Assert.True(playerMergesWeapon.equipments.Exists(equipment => equipment == weapon));
+
+		//2. Act
+		MergerInfo monsterMergesWeapon = mergingController.Merge(monster, secondWeapon, new Position(0), new Position(1));
+		//3. Assert
+		Assert.True(monsterMergesWeapon.equipments.Exists(equipment => equipment == secondWeapon));
 
 		//2. Act
 		MergerInfo playerMergesMonster = mergingController.Merge(player, monster, new Position(0), new Position(1));
 		//3. Assert
+		actionLogs = playerMergesMonster.actionLogs;
 		Assert.AreEqual(8, playerMergesMonster.hp);
-		Assert.AreEqual(ActionType.ATTACK, playerMergesMonster.actionLogs[0].type);
-		Assert.AreEqual(ActionType.GET_DAMAGED, playerMergesMonster.actionLogs[1].type);
-		Assert.AreEqual(5, playerMergesMonster.actionLogs[0].valueAffected);
-		Assert.AreEqual(5, playerMergesMonster.actionLogs[1].valueAffected);
+		Assert.AreEqual(ActionType.ATTACK, actionLogs[0].type);
+		Assert.AreEqual(ActionType.GET_DAMAGED, actionLogs[1].type);
+		Assert.AreEqual(5, actionLogs[0].valueAffected);
+		Assert.AreEqual(5, actionLogs[1].valueAffected);
+		Assert.True(playerMergesMonster.equipments.Exists(equipment => equipment == secondWeapon));
 
 		//2. Act
 		MergerInfo playerMergesPotion = mergingController.Merge(player, potion, new Position(0), new Position(1));
 		//3. Assert
+		actionLogs = playerMergesPotion.actionLogs;
 		Assert.AreEqual(13, playerMergesPotion.hp);
-		Assert.AreEqual(ActionType.USE_POTION, playerMergesPotion.actionLogs[0].type);
-		Assert.AreEqual(5, playerMergesPotion.actionLogs[0].valueAffected);
+		Assert.AreEqual(ActionType.USE_POTION, actionLogs[1].type);
+		Assert.AreEqual(5, actionLogs[1].valueAffected);
 	}
 }

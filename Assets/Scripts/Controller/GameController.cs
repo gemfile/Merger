@@ -167,11 +167,9 @@ namespace com.Gemfile.Merger
 		IEnumerator StartChangeOrientation()
 		{
 			yield return null;
-			View.Field.Reset(false);
+			View.ChangeOrientation();
 			yield return null;
 			View.UI.Align(View.Field.BackgroundBounds);
-			View.UI.ClearCards();
-			View.Field.ShowField();
 			View.Field.RetakeCapture(Field.GetPlayerInfo());
 			SetNavigation();
 		}

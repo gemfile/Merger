@@ -152,5 +152,10 @@ namespace com.Gemfile.Merger
 				vectorLineInfo.value.active = false;
 			});
 		}
+
+		public override void Reset()
+		{
+			Clear();
+		}
 	}
 }
